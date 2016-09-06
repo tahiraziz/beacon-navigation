@@ -2,6 +2,7 @@ package lilium.arubabacon;
 
 import android.Manifest;
 import android.app.AlertDialog;
+import android.bluetooth.le.ScanResult;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -24,7 +25,7 @@ public class MainActivity extends AppCompatActivity {
     BluetoothManager btManager;
     BluetoothAdapter btAdapter;
 
-    ArrayList<iBeacon> beacons = new ArrayList<iBeacon>();
+    ArrayList<iBeacon> beacons = new ArrayList<>();
     ArrayAdapter<iBeacon> iBeaconAdapter;
 
     @Override
@@ -63,32 +64,34 @@ public class MainActivity extends AppCompatActivity {
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 if(isChecked)
                 {
-                    btAdapter.startLeScan(leScanCallback);
+                    btAdapter.getBluetoothLeScanner().startScan(ScanCallback);
                 }
                 else
                 {
-                    btAdapter.stopLeScan(leScanCallback);
+                    btAdapter.getBluetoothLeScanner().stopScan(ScanCallback);
                 }
             }
         });
 
-        iBeaconAdapter = new ArrayAdapter<iBeacon>(this, android.R.layout.simple_list_item_1, beacons);
+        iBeaconAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, beacons);
         ListView debug = (ListView)findViewById(R.id.listView);
         debug.setAdapter(iBeaconAdapter);
     }
 
     //device discovery
-    private BluetoothAdapter.LeScanCallback leScanCallback = new BluetoothAdapter.LeScanCallback() {
+    private android.bluetooth.le.ScanCallback ScanCallback = new android.bluetooth.le.ScanCallback(){
         @Override
-        public void onLeScan(final BluetoothDevice device, final int rssi, final byte[] scanRecord) {
-            iBeacon bacon = new iBeacon(scanRecord, rssi);
+        public void onScanResult(int callbackType, ScanResult result){
+            iBeacon bacon = new iBeacon(result.getDevice(), result.getRssi(), result.getScanRecord().getBytes());
 
-            if(beacons.contains(bacon)){
-                beacons.set(beacons.indexOf(bacon), bacon);
-                iBeaconAdapter.notifyDataSetChanged();
-            }else{
-                beacons.add(bacon);
-                iBeaconAdapter.notifyDataSetChanged();
+            if (bacon.isiBeacon) {
+                if (beacons.contains(bacon)) {
+                    beacons.set(beacons.indexOf(bacon), bacon);
+                    iBeaconAdapter.notifyDataSetChanged();
+                } else {
+                    beacons.add(bacon);
+                    iBeaconAdapter.notifyDataSetChanged();
+                }
             }
         }
     };

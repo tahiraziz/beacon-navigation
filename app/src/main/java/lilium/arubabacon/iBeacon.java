@@ -1,36 +1,53 @@
 package lilium.arubabacon;
 
+import android.bluetooth.BluetoothDevice;
 import android.widget.ArrayAdapter;
 
 import java.util.Arrays;
 
 public class iBeacon{
-    //http://www.warski.org/blog/2014/01/how-ibeacons-work/
-    //https://developer.mbed.org/blog/entry/BLE-Beacons-URIBeacon-AltBeacons-iBeacon/
-    public byte[] prefix = new byte[] {0,0,0,0,0,0,0,0,0};
-    public byte[] uuid = new byte[] {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-    public int major;
-    public int minor;
-    public byte tx;
-    private double calibration = 2.42;
-    public double distance;
+    String mac;
+    String name;
 
-    public iBeacon(byte[] scanRecord, double rssi){
+    public byte[] prefix = new byte[] {0,0,0,0,0,0,0,0,0};
+    public boolean isiBeacon;
+    public byte[] uuid = new byte[] {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+    public short major;
+    public short minor;
+    public int tx;
+    public double rssi;
+    public double distance;
+    public byte[] scanResponse;
+
+    public iBeacon(final BluetoothDevice device, double rssi, byte[] scanRecord){
+        mac = device.getAddress();
+        name = device.getName();
+
         System.arraycopy(scanRecord, 0, prefix, 0, 9);
+        isiBeacon = Arrays.equals(prefix, new byte[] {0x02,0x01,0x06,0x1a,(byte)0xff,0x4c,0x00,0x02,0x15});
         System.arraycopy(scanRecord, 9, uuid, 0, 16);
-        major = scanRecord[25] << 0xFF + scanRecord[26];
-        minor = scanRecord[27] << 0xFF + scanRecord[28];
+        major = (short)( ((scanRecord[25] & 0xFF) << 8) | (scanRecord[26] & 0xFF) );
+        minor = (short)( ((scanRecord[27] & 0xFF) << 8) | (scanRecord[28] & 0xFF) );
         tx = scanRecord[29];
+        this.rssi = rssi;
         if (rssi != 0) {
-            distance = Math.pow(10, (tx - rssi) / (10.0 * calibration));
+            //https://stackoverflow.com/questions/20416218/understanding-ibeacon-distancing/20434019
+            distance = Math.sqrt(Math.pow(10, (tx - rssi) / (10.0)));
         }else{
             distance = -1;
+        }
+        if(scanRecord.length > 31) {
+            scanResponse = new byte[scanRecord.length - 30];
+            System.arraycopy(scanRecord, 30, scanResponse, 0, scanRecord.length - 30);
         }
     }
 
     @Override
     public String toString(){
-        return byteArrayToHexString(prefix) + "\n" + byteArrayToHexString(uuid) + "." + major + "." + minor + "\n" + Double.toString(distance);
+        return  "MAC: " + mac + "\n" +
+                "TX: " + tx + " RSSI: " + rssi + "\n" +
+                "Distance: " + Double.toString(distance) + "\n" +
+                "scanResponse:\n" + byteArrayToHexString(scanResponse);
     }
 
     @Override
@@ -42,11 +59,8 @@ public class iBeacon{
             return false;
         }
         final iBeacon other = (iBeacon) obj;
-        if(Arrays.equals(other.uuid, uuid) && (other.major == major) && (other.minor == minor)){
-            return true;
-        }else{
-            return false;
-        }
+        //if(Arrays.equals(other.uuid, uuid) && (other.major == major) && (other.minor == minor) && Arrays.equals(other.unknown, unknown)){
+        return other.mac.equals(mac);
     }
 
     final protected static char[] hexArray = {'0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'};

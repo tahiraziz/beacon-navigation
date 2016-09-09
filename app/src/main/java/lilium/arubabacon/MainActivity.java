@@ -59,6 +59,10 @@ public class MainActivity extends AppCompatActivity {
             startActivityForResult(enableIntent,1);
         }
 
+        iBeaconAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, beacons);
+        ListView debug = (ListView)findViewById(R.id.listView);
+        debug.setAdapter(iBeaconAdapter);
+
         ToggleButton toggle = (ToggleButton) findViewById(R.id.toggleButton);
         toggle.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
@@ -73,9 +77,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        iBeaconAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, beacons);
-        ListView debug = (ListView)findViewById(R.id.listView);
-        debug.setAdapter(iBeaconAdapter);
+        toggle.setChecked(true);
     }
 
     //device discovery
@@ -86,6 +88,13 @@ public class MainActivity extends AppCompatActivity {
 
             if (bacon.isiBeacon) {
                 if (beacons.contains(bacon)) {
+                    long now = System.currentTimeMillis();
+                    bacon.advertInterval = now - beacons.get(beacons.indexOf(bacon)).lastUpdate;
+                    bacon.lastUpdate = now;
+
+                    bacon.cummulativeRssi = beacons.get(beacons.indexOf(bacon)).cummulativeRssi + result.getRssi();
+                    bacon.numRssi = beacons.get(beacons.indexOf(bacon)).numRssi + 1;
+
                     beacons.set(beacons.indexOf(bacon), bacon);
                     iBeaconAdapter.notifyDataSetChanged();
                 } else {

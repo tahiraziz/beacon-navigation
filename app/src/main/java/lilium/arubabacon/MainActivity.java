@@ -8,20 +8,24 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Build;
+import android.os.Environment;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.bluetooth.*;
+import android.view.KeyEvent;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.CompoundButton;
+import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.ToggleButton;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+
 
 public class MainActivity extends AppCompatActivity {
     BluetoothManager btManager;
@@ -29,6 +33,7 @@ public class MainActivity extends AppCompatActivity {
 
     ArrayList<iBeacon> beacons = new ArrayList<>();
     ArrayAdapter<iBeacon> iBeaconAdapter;
+    double ploss = 2.0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -44,13 +49,20 @@ public class MainActivity extends AppCompatActivity {
                 builder.setMessage("Please grant location access so this app can detect beacons.");
                 builder.setPositiveButton(android.R.string.ok, null);
                 builder.setOnDismissListener(new DialogInterface.OnDismissListener() {
-                                                 public void onDismiss(DialogInterface dialog) {
-                                                     requestPermissions(new String[]{
-                                                             Manifest.permission.ACCESS_FINE_LOCATION}, 1);
-                                                 }
+                    public void onDismiss(DialogInterface dialog) {
+                        requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 1);
+                    }
                 });
                 builder.show();
             }
+        }
+
+        String[] PERMISSIONS_STORAGE = new String[] {Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE};
+        // Check if we have write permission
+        int permission = checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE);
+        if (permission != PackageManager.PERMISSION_GRANTED) {
+            // We don't have permission so prompt the user
+            requestPermissions(PERMISSIONS_STORAGE, 1);
         }
 
         //get and enable BT adapter
@@ -65,10 +77,27 @@ public class MainActivity extends AppCompatActivity {
         ListView debug = (ListView)findViewById(R.id.listView);
         debug.setAdapter(iBeaconAdapter);
 
+        final EditText pathLoss = (EditText) findViewById(R.id.pathLoss);
+        pathLoss.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+                //if (actionId == EditorInfo.IME_ACTION_DONE) {
+                        ploss = Double.parseDouble(pathLoss.getText().toString());
+                    return true;
+                //}
+                //return false;
+            }
+        });
+
         Button reset = (Button) findViewById(R.id.reset);
         reset.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 beacons.clear();
+                try {
+                    File file = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + "/rssi.csv");
+                    if(file.exists()) file.delete();
+                } catch (Exception e) {
+                    System.out.println(e.getMessage());
+                }
                 iBeaconAdapter.notifyDataSetChanged();
             }
         });
@@ -99,6 +128,17 @@ public class MainActivity extends AppCompatActivity {
 
             if (bacon.isiBeacon) {
                 if (beacons.contains(bacon)) {
+                    //write to csv for power regression analysis
+                    try {
+                        File file = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + "/rssi.csv");
+                        if(!file.exists()) file.createNewFile();
+                        FileOutputStream csv = new FileOutputStream(file, true);
+                        csv.write((result.getDevice().getAddress() + "," + result.getRssi() + "\n").getBytes());
+                        csv.close();
+                    } catch (Exception e) {
+                        System.out.println(e.getMessage());
+                    }
+
                     //we need historical rssi and interval tracking
                     //this is a bad way to do it, but I hate object oriented programming
 
@@ -114,6 +154,8 @@ public class MainActivity extends AppCompatActivity {
 
                     //lower in this sense means further from 0 from the negative side
                     bacon.highRssi = Math.min(result.getRssi(), beacons.get(beacons.indexOf(bacon)).highRssi);
+
+                    bacon.pathLoss = ploss;
 
                     //okay, we have all the data so lets init those distances
                     bacon.postInit();

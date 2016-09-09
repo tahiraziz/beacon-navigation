@@ -11,7 +11,9 @@ import android.os.Build;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.bluetooth.*;
+import android.view.View;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.CompoundButton;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -63,6 +65,15 @@ public class MainActivity extends AppCompatActivity {
         ListView debug = (ListView)findViewById(R.id.listView);
         debug.setAdapter(iBeaconAdapter);
 
+        Button reset = (Button) findViewById(R.id.reset);
+        reset.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                beacons.clear();
+                iBeaconAdapter.notifyDataSetChanged();
+            }
+        });
+
+
         ToggleButton toggle = (ToggleButton) findViewById(R.id.toggleButton);
         toggle.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
@@ -88,12 +99,24 @@ public class MainActivity extends AppCompatActivity {
 
             if (bacon.isiBeacon) {
                 if (beacons.contains(bacon)) {
+                    //we need historical rssi and interval tracking
+                    //this is a bad way to do it, but I hate object oriented programming
+
                     long now = System.currentTimeMillis();
                     bacon.advertInterval = now - beacons.get(beacons.indexOf(bacon)).lastUpdate;
                     bacon.lastUpdate = now;
 
+                    //lower in this sense means closer to 0 from the negative side
+                    bacon.lowRssi = Math.max(result.getRssi(), beacons.get(beacons.indexOf(bacon)).lowRssi);
+
                     bacon.cummulativeRssi = beacons.get(beacons.indexOf(bacon)).cummulativeRssi + result.getRssi();
                     bacon.numRssi = beacons.get(beacons.indexOf(bacon)).numRssi + 1;
+
+                    //lower in this sense means further from 0 from the negative side
+                    bacon.highRssi = Math.min(result.getRssi(), beacons.get(beacons.indexOf(bacon)).highRssi);
+
+                    //okay, we have all the data so lets init those distances
+                    bacon.postInit();
 
                     beacons.set(beacons.indexOf(bacon), bacon);
                     iBeaconAdapter.notifyDataSetChanged();

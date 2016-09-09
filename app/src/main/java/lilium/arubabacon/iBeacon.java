@@ -6,6 +6,7 @@ import java.text.DecimalFormat;
 import java.util.Arrays;
 
 public class iBeacon{
+    //everything is public because of AMERICAN FREEDOM
     public String mac;
     public String name;
     public long lastUpdate;
@@ -18,12 +19,22 @@ public class iBeacon{
     public short minor;
     public int tx;
     public int rssi;
+    public int lowRssi;
     public int cummulativeRssi;
     public int numRssi;
+    public int highRssi;
     public double distance;
     public double distance2;
+    public double distance3;
+    public double lowDistance;
+    public double lowDistance2;
+    public double lowDistance3;
     public double avgDistance;
     public double avgDistance2;
+    public double avgDistance3;
+    public double highDistance;
+    public double highDistance2;
+    public double highDistance3;
     public byte[] scanResponse;
 
     public iBeacon(final BluetoothDevice device, int rssi, byte[] scanRecord){
@@ -37,15 +48,39 @@ public class iBeacon{
         major = (short)( ((scanRecord[25] & 0xFF) << 8) | (scanRecord[26] & 0xFF) );
         minor = (short)( ((scanRecord[27] & 0xFF) << 8) | (scanRecord[28] & 0xFF) );
         tx = scanRecord[29];
-        this.rssi = rssi;
-        cummulativeRssi = rssi;
-        numRssi = 1;
-        distance = calculateDistance(tx, rssi);
-        distance2 = calculateDistance2(tx, rssi);
+        //these beacons are transmitting 62 bytes, an advert packet and scan response packet
         if(scanRecord.length > 31) {
             scanResponse = new byte[scanRecord.length - 30];
             System.arraycopy(scanRecord, 30, scanResponse, 0, scanRecord.length - 30);
         }
+
+        //begin tracking RSSI
+        this.rssi = rssi;
+        lowRssi = rssi;
+        cummulativeRssi = rssi;
+        numRssi = 1;
+        highRssi = rssi;
+
+        //calculate distances for this instance
+        distance = calculateDistance(tx, rssi);
+        distance2 = calculateDistance2(tx, rssi);
+        distance3 = calculateDistance3(tx, rssi);
+    }
+
+    public void postInit(){
+        //these calculations need historical values
+
+        lowDistance = calculateDistance(tx, lowRssi);
+        avgDistance = calculateDistance(tx, cummulativeRssi * 1.0 / numRssi);
+        highDistance = calculateDistance(tx, highRssi);
+
+        lowDistance2 = calculateDistance2(tx, lowRssi);
+        avgDistance2 = calculateDistance2(tx, cummulativeRssi * 1.0 / numRssi);
+        highDistance2 = calculateDistance2(tx, highRssi);
+
+        lowDistance3 = calculateDistance3(tx, lowRssi);
+        avgDistance3 = calculateDistance3(tx, cummulativeRssi * 1.0 / numRssi);
+        highDistance3 = calculateDistance3(tx, highRssi);
     }
 
     public double calculateDistance(int tx, double rssi){
@@ -57,9 +92,9 @@ public class iBeacon{
     public double calculateDistance2(int tx, double rssi) {
         //change these coefficients for different models, manufacturers, and chipsets
         //need some linear regression here
-        double A = 0.5;
-        double B = 4.2;
-        double C = 0.0;
+        double A = 0.42;
+        double B = 6.5;
+        double C = 0.55;
 
         https://altbeacon.github.io/android-beacon-library/distance-calculations.html
         http://developer.radiusnetworks.com/2014/12/04/fundamentals-of-beacon-ranging.html
@@ -69,18 +104,38 @@ public class iBeacon{
         return A * Math.pow(rssi * 1.0 / tx, B) + C;
     }
 
+    public double calculateDistance3(int tx, double rssi){
+        double pathLoss = 3.0;
+        //https://electronics.stackexchange.com/questions/83354/calculate-distance-from-rssi
+        if (rssi != 0) return Math.pow(10, (rssi - tx) / (-10 * pathLoss));
+        return -1;
+    }
+
     @Override
     public String toString(){
-        avgDistance = calculateDistance(tx, cummulativeRssi * 1.0 / numRssi);
-        avgDistance2 = calculateDistance2(tx, cummulativeRssi * 1.0 / numRssi);
-        return  "MAC: " + mac + "\n" +
-                "TX/RSSI/avgRSSI: " + tx + "/" + rssi + "/" + new DecimalFormat("#.##").format(cummulativeRssi * 1.0 / numRssi) + "\n" +
-                "advertInterval: " + advertInterval + "ms   Samples: " + numRssi + "\n" +
-                "Distance1: " + Double.toString(distance) + "\n" +
-                "averaged1: " + Double.toString(avgDistance) + "\n" +
-                "Distance2: " + Double.toString(distance2) + "\n" +
-                "averaged2: " + Double.toString(avgDistance2);
-                // + "\n" + "scanResponse:\n" + byteArrayToHexString(scanResponse);
+        return  "MAC: " + mac + "         TX: " + tx + "\n" +
+                "advertInterval: " + advertInterval + "ms   Samples: " + numRssi + "\n\n" +
+                "Now      Low      Avg        High\n" +
+
+                rssi + "        " +
+                lowRssi + "        " +
+                new DecimalFormat("00.00").format(cummulativeRssi * 1.0 / numRssi) + "     " +
+                highRssi + "\n" +
+
+                new DecimalFormat("0.000").format(distance) + "    " +
+                new DecimalFormat("0.000").format(lowDistance) + "    " +
+                new DecimalFormat("0.000").format(avgDistance) + "    " +
+                new DecimalFormat("0.000").format(highDistance) + "\n" +
+
+                new DecimalFormat("0.000").format(distance2) + "    " +
+                new DecimalFormat("0.000").format(lowDistance2) + "    " +
+                new DecimalFormat("0.000").format(avgDistance2) + "    " +
+                new DecimalFormat("0.000").format(highDistance2) + "\n" +
+
+                new DecimalFormat("0.000").format(distance3) + "    " +
+                new DecimalFormat("0.000").format(lowDistance3) + "    " +
+                new DecimalFormat("0.000").format(avgDistance3) + "    " +
+                new DecimalFormat("0.000").format(highDistance3) + "\n";
     }
 
     @Override
@@ -94,19 +149,5 @@ public class iBeacon{
         final iBeacon other = (iBeacon) obj;
         //if(Arrays.equals(other.uuid, uuid) && (other.major == major) && (other.minor == minor) && Arrays.equals(other.unknown, unknown)){
         return other.mac.equals(mac);
-    }
-
-    final protected static char[] hexArray = {'0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'};
-    public static String byteArrayToHexString(byte[] bytes) {
-        char[] hexChars = new char[bytes.length*2];
-        int v;
-
-        for(int j=0; j < bytes.length; j++) {
-            v = bytes[j] & 0xFF;
-            hexChars[j*2] = hexArray[v>>>4];
-            hexChars[j*2 + 1] = hexArray[v & 0x0F];
-        }
-
-        return new String(hexChars);
     }
 }

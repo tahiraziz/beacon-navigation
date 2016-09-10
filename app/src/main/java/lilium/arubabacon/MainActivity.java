@@ -69,6 +69,7 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
+        //device discovery for API level 21+
         if (Build.VERSION.SDK_INT >= 21) {
             ScanCallback = new android.bluetooth.le.ScanCallback() {
                 @Override
@@ -129,18 +130,17 @@ public class MainActivity extends AppCompatActivity {
             startActivityForResult(enableIntent,1);
         }
 
+        //beacon array/list
         iBeaconAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, beacons);
         ListView debug = (ListView)findViewById(R.id.listView);
         debug.setAdapter(iBeaconAdapter);
 
+        //pathLoss for debugging distance equation
         final EditText pathLoss = (EditText) findViewById(R.id.pathLoss);
-        pathLoss.setOnEditorActionListener(new TextView.OnEditorActionListener() {
-            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
-                //if (actionId == EditorInfo.IME_ACTION_DONE) {
-                        ploss = Double.parseDouble(pathLoss.getText().toString());
-                    return true;
-                //}
-                //return false;
+        Button setPathLoss = (Button) findViewById(R.id.setPathLoss);
+        setPathLoss.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                ploss = Double.parseDouble(pathLoss.getText().toString());
             }
         });
 
@@ -158,32 +158,14 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-
-        ToggleButton toggle = (ToggleButton) findViewById(R.id.toggleButton);
-        toggle.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                if(isChecked)
-                {
-                    if (Build.VERSION.SDK_INT >= 21) {
-                        btAdapter.getBluetoothLeScanner().startScan(ScanCallback);
-                    } else {
-                        btAdapter.startLeScan(depScanCallback);
-                    }
-                } else {
-                    if (Build.VERSION.SDK_INT >= 21) {
-                        btAdapter.getBluetoothLeScanner().stopScan(ScanCallback);
-                    } else {
-                        btAdapter.stopLeScan(depScanCallback);
-                    }
-                }
-            }
-        });
-
-        toggle.setChecked(true);
+        if (Build.VERSION.SDK_INT >= 21) {
+            btAdapter.getBluetoothLeScanner().startScan(ScanCallback);
+        } else {
+            btAdapter.startLeScan(depScanCallback);
+        }
     }
 
-    //device discovery
-
+    //device discovery for API level 18-20
     private BluetoothAdapter.LeScanCallback depScanCallback = new BluetoothAdapter.LeScanCallback() {
         @Override
         public void onLeScan(final BluetoothDevice device, final int rssi, final byte[] scanRecord) {

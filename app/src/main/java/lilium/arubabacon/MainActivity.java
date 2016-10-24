@@ -101,7 +101,7 @@ public class MainActivity extends AppCompatActivity {
 
     //update stuff when we receive new beacon data
     ArrayList<iBeacon> beacons = new ArrayList<>();
-    ArrayList<iBeacon> newbeacons = new ArrayList<>();
+    ArrayList<iBeacon> newBeacons = new ArrayList<>();
     void updateBeacons(String mac, int rssi) {
         android.database.Cursor c = db.rawQuery("SELECT 1 FROM beacons WHERE mac='" + mac + "'", null);
         if (c.getCount() == 1) {
@@ -129,8 +129,8 @@ public class MainActivity extends AppCompatActivity {
             }
         } else {
             iBeacon beacon = new iBeacon(mac, rssi, -1, -1);
-            if (newbeacons.contains(beacon)) {
-                int b = newbeacons.indexOf(beacon);
+            if (newBeacons.contains(beacon)) {
+                int b = newBeacons.indexOf(beacon);
                 beacon = beacons.get(b);
 
                 long now = System.currentTimeMillis();
@@ -146,24 +146,45 @@ public class MainActivity extends AppCompatActivity {
                 beacon.cummulativeRssi = beacon.cummulativeRssi + rssi;
                 beacon.numRssi = beacon.numRssi + 1;
 
-                newbeacons.set(b, beacon);
+                newBeacons.set(b, beacon);
             } else {
                 beacons.add(beacon);
             }
         }
+
+        //remove beacons which have not been updated in a while
+        long now = System.currentTimeMillis();
+        int index = 0;
+        while(index < beacons.size()){
+            if(now - beacons.get(index).lastUpdate > 1242){
+                beacons.remove(index);
+            } else {
+                index++;
+            }
+        }
+
+        now = System.currentTimeMillis();
+        index = 0;
+        while(index < newBeacons.size()){
+            if(now - newBeacons.get(index).lastUpdate > 1242){
+                newBeacons.remove(index);
+            } else {
+                index++;
+            }
+        }
     }
 
-    void placeBeacon(int x, int y){
+    void placeBeacon(double x, double y){
         int closest = 0;
-        for (int i = 0; i < newbeacons.size(); i++){
-            if (newbeacons.get(i).rssi > newbeacons.get(closest).rssi) closest = i;
+        for (int i = 0; i < newBeacons.size(); i++){
+            if (newBeacons.get(i).rssi > newBeacons.get(closest).rssi) closest = i;
         }
-        iBeacon beacon = newbeacons.get(closest);
+        iBeacon beacon = newBeacons.get(closest);
         beacon.x = x;
         beacon.y = y;
         beacons.add(beacon);
         db.execSQL("INSERT INTO beacons (mac, x, y) VALUES ("+beacon.mac+","+x+","+y+")");
-        newbeacons.remove(closest);
+        newBeacons.remove(closest);
     }
 
     void updatePosition(){

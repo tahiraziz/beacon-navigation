@@ -9,29 +9,18 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Build;
-import android.os.Environment;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.bluetooth.*;
-import android.view.View;
-import android.widget.ArrayAdapter;
-import android.widget.Button;
-import android.widget.EditText;
-import android.widget.ListView;
-
-import java.io.File;
-import java.io.FileOutputStream;
+import android.database.sqlite.*;
 import java.util.ArrayList;
+import java.util.Iterator;
 
+import org.apache.commons.math3.fitting.leastsquares.LeastSquaresOptimizer;
+import org.apache.commons.math3.fitting.leastsquares.LevenbergMarquardtOptimizer;
 
 public class MainActivity extends AppCompatActivity {
-    private android.bluetooth.le.ScanCallback ScanCallback;
-    BluetoothManager btManager;
-    BluetoothAdapter btAdapter;
-
-    ArrayList<iBeacon> beacons = new ArrayList<>();
-    ArrayAdapter<iBeacon> iBeaconAdapter;
-    double ploss = 2.0;
+    final SQLiteDatabase db = openOrCreateDatabase("BeaconsDB", Context.MODE_PRIVATE, null);
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -64,158 +53,137 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
-        //device discovery for API level 21+
-        if (Build.VERSION.SDK_INT >= 21) {
-            ScanCallback = new android.bluetooth.le.ScanCallback() {
-                @Override
-                @TargetApi(21)
-                public void onScanResult(int callbackType, ScanResult result) {
-                    iBeacon bacon = new iBeacon(result.getDevice(), result.getRssi(), result.getScanRecord().getBytes());
-
-                    if (bacon.isiBeacon) {
-                        if (beacons.contains(bacon)) {
-                            //write to csv for power regression analysis
-                            try {
-                                File file = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + "/rssi.csv");
-                                if (!file.exists()) file.createNewFile();
-                                FileOutputStream csv = new FileOutputStream(file, true);
-                                csv.write((result.getDevice().getAddress() + "," + result.getRssi() + "\n").getBytes());
-                                csv.close();
-                            } catch (Exception e) {
-                                System.out.println(e.getMessage());
-                            }
-
-                            //we need historical rssi and interval tracking
-                            //this is a bad way to do it, but I hate object oriented programming
-
-                            long now = System.currentTimeMillis();
-                            bacon.advertInterval = now - beacons.get(beacons.indexOf(bacon)).lastUpdate;
-                            bacon.lastUpdate = now;
-
-                            //lower in this sense means closer to 0 from the negative side
-                            bacon.lowRssi = Math.max(result.getRssi(), beacons.get(beacons.indexOf(bacon)).lowRssi);
-
-                            bacon.cummulativeRssi = beacons.get(beacons.indexOf(bacon)).cummulativeRssi + result.getRssi();
-                            bacon.numRssi = beacons.get(beacons.indexOf(bacon)).numRssi + 1;
-
-                            //lower in this sense means further from 0 from the negative side
-                            bacon.highRssi = Math.min(result.getRssi(), beacons.get(beacons.indexOf(bacon)).highRssi);
-
-                            bacon.pathLoss = ploss;
-
-                            //okay, we have all the data so lets init those distances
-                            bacon.postInit();
-
-                            beacons.set(beacons.indexOf(bacon), bacon);
-                            iBeaconAdapter.notifyDataSetChanged();
-                        } else {
-                            beacons.add(bacon);
-                            iBeaconAdapter.notifyDataSetChanged();
-                        }
-                    }
-                }
-            };
-        }
-
         //get and enable BT adapter
-        btManager = (BluetoothManager)getSystemService(Context.BLUETOOTH_SERVICE);
-        btAdapter = btManager.getAdapter();
+        BluetoothManager btManager = (BluetoothManager)getSystemService(Context.BLUETOOTH_SERVICE);
+        BluetoothAdapter btAdapter = btManager.getAdapter();
         if (btAdapter != null && !btAdapter.isEnabled()) {
             Intent enableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
             startActivityForResult(enableIntent,1);
         }
 
-        //beacon array/list
-        iBeaconAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, beacons);
-        ListView debug = (ListView)findViewById(R.id.listView);
-        debug.setAdapter(iBeaconAdapter);
 
-        //pathLoss for debugging distance equation
-        final EditText pathLoss = (EditText) findViewById(R.id.pathLoss);
-        Button setPathLoss = (Button) findViewById(R.id.setPathLoss);
-        setPathLoss.setOnClickListener(new View.OnClickListener() {
-            public void onClick(View v) {
-                ploss = Double.parseDouble(pathLoss.getText().toString());
-            }
-        });
+        db.execSQL("CREATE TABLE IF NOT EXISTS beacons(mac VARCHAR(12), x double, y double);");
 
-        Button reset = (Button) findViewById(R.id.reset);
-        reset.setOnClickListener(new View.OnClickListener() {
-            public void onClick(View v) {
-                beacons.clear();
-                try {
-                    File file = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + "/rssi.csv");
-                    if(file.exists()) file.delete();
-                } catch (Exception e) {
-                    System.out.println(e.getMessage());
-                }
-                iBeaconAdapter.notifyDataSetChanged();
-            }
-        });
-
+        //device discovery for API level 21+
         if (Build.VERSION.SDK_INT >= 21) {
+            android.bluetooth.le.ScanCallback ScanCallback= new android.bluetooth.le.ScanCallback() {
+                @Override
+                @TargetApi(21)
+                public void onScanResult(int callbackType, ScanResult result) {
+                    updateBeacons(result.getDevice().getAddress(), result.getRssi());
+                    updatePosition();
+                }
+            };
+
             ArrayList<android.bluetooth.le.ScanFilter> filters = new ArrayList<>();
             android.bluetooth.le.ScanSettings settings =
                     new android.bluetooth.le.ScanSettings.Builder()
                             .setScanMode(android.bluetooth.le.ScanSettings.SCAN_MODE_LOW_LATENCY).build();
             btAdapter.getBluetoothLeScanner().startScan(filters, settings, ScanCallback);
         } else {
+            //device discovery for API level 18-20, this is very slow
+            BluetoothAdapter.LeScanCallback depScanCallback = new BluetoothAdapter.LeScanCallback() {
+                @Override
+                public void onLeScan(final BluetoothDevice device, final int rssi, final byte[] scanRecord) {
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            updateBeacons(device.getAddress(), rssi);
+                            updatePosition();
+                        }
+                    });
+                }
+            };
+
             btAdapter.startLeScan(depScanCallback);
         }
     }
 
-    //device discovery for API level 18-20
-    private BluetoothAdapter.LeScanCallback depScanCallback = new BluetoothAdapter.LeScanCallback() {
-        @Override
-        public void onLeScan(final BluetoothDevice device, final int rssi, final byte[] scanRecord) {
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    iBeacon bacon = new iBeacon(device, rssi, scanRecord);
+    //update stuff when we receive new beacon data
+    ArrayList<iBeacon> beacons = new ArrayList<>();
+    ArrayList<iBeacon> newbeacons = new ArrayList<>();
+    void updateBeacons(String mac, int rssi) {
+        android.database.Cursor c = db.rawQuery("SELECT 1 FROM beacons WHERE mac='" + mac + "'", null);
+        if (c.getCount() == 1) {
+            iBeacon beacon = new iBeacon(mac, rssi, c.getDouble(1), c.getDouble(2));
+            if (beacons.contains(beacon)) {
+                int b = beacons.indexOf(beacon);
+                beacon = beacons.get(b);
 
-                    if (bacon.isiBeacon) {
-                        if (beacons.contains(bacon)) {
-                            //write to csv for power regression analysis
-                            try {
-                                File file = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + "/rssi.csv");
-                                if (!file.exists()) file.createNewFile();
-                                FileOutputStream csv = new FileOutputStream(file, true);
-                                csv.write((device.getAddress() + "," + rssi + "\n").getBytes());
-                                csv.close();
-                            } catch (Exception e) {
-                                System.out.println(e.getMessage());
-                            }
+                long now = System.currentTimeMillis();
+                beacon.advertInterval = now - beacon.lastUpdate;
+                beacon.lastUpdate = now;
 
-                            //we need historical rssi and interval tracking
-                            //this is a bad way to do it, but I hate object oriented programming
+                //lower in this sense means closer to 0 from the negative side
+                beacon.lowRssi = Math.max(rssi, beacon.lowRssi);
 
-                            long now = System.currentTimeMillis();
-                            bacon.advertInterval = now - beacons.get(beacons.indexOf(bacon)).lastUpdate;
-                            bacon.lastUpdate = now;
+                //lower in this sense means further from 0 from the negative side
+                beacon.highRssi = Math.min(rssi, beacon.highRssi);
 
-                            //lower in this sense means closer to 0 from the negative side
-                            bacon.lowRssi = Math.max(rssi, beacons.get(beacons.indexOf(bacon)).lowRssi);
+                beacon.cummulativeRssi = beacon.cummulativeRssi + rssi;
+                beacon.numRssi = beacon.numRssi + 1;
 
-                            bacon.cummulativeRssi = beacons.get(beacons.indexOf(bacon)).cummulativeRssi + rssi;
-                            bacon.numRssi = beacons.get(beacons.indexOf(bacon)).numRssi + 1;
+                beacons.set(b, beacon);
+            } else {
+                beacons.add(beacon);
+            }
+        } else {
+            iBeacon beacon = new iBeacon(mac, rssi, -1, -1);
+            if (newbeacons.contains(beacon)) {
+                int b = newbeacons.indexOf(beacon);
+                beacon = beacons.get(b);
 
-                            //lower in this sense means further from 0 from the negative side
-                            bacon.highRssi = Math.min(rssi, beacons.get(beacons.indexOf(bacon)).highRssi);
+                long now = System.currentTimeMillis();
+                beacon.advertInterval = now - beacon.lastUpdate;
+                beacon.lastUpdate = now;
 
-                            bacon.pathLoss = ploss;
+                //lower in this sense means closer to 0 from the negative side
+                beacon.lowRssi = Math.max(rssi, beacon.lowRssi);
 
-                            //okay, we have all the data so lets init those distances
-                            bacon.postInit();
+                //lower in this sense means further from 0 from the negative side
+                beacon.highRssi = Math.min(rssi, beacon.highRssi);
 
-                            beacons.set(beacons.indexOf(bacon), bacon);
-                            iBeaconAdapter.notifyDataSetChanged();
-                        } else {
-                            beacons.add(bacon);
-                            iBeaconAdapter.notifyDataSetChanged();
-                        }
-                    }
-                }
-            });
+                beacon.cummulativeRssi = beacon.cummulativeRssi + rssi;
+                beacon.numRssi = beacon.numRssi + 1;
+
+                newbeacons.set(b, beacon);
+            } else {
+                beacons.add(beacon);
+            }
         }
-    };
+    }
+
+    void placeBeacon(int x, int y){
+        int closest = 0;
+        for (int i = 0; i < newbeacons.size(); i++){
+            if (newbeacons.get(i).rssi > newbeacons.get(closest).rssi) closest = i;
+        }
+        iBeacon beacon = newbeacons.get(closest);
+        beacon.x = x;
+        beacon.y = y;
+        beacons.add(beacon);
+        db.execSQL("INSERT INTO beacons (mac, x, y) VALUES ("+beacon.mac+","+x+","+y+")");
+        newbeacons.remove(closest);
+    }
+
+    void updatePosition(){
+        //https://stackoverflow.com/questions/16485370/wifi-position-triangulation
+        //https://en.wikipedia.org/wiki/Trilateration
+        //https://github.com/lemmingapex/Trilateration
+
+        double[][] positions = new double[beacons.size()][2];
+        double[] distances = new double[beacons.size()];
+
+        for (int i = 0; i < beacons.size(); i++){
+            positions[i][0] = beacons.get(i).x;
+            positions[i][1] = beacons.get(i).y;
+            distances[i] = Math.pow(10.0, (-61 - beacons.get(i).rssi) / (10.0 * 2.0));
+        }
+
+        NonLinearLeastSquaresSolver solver = new NonLinearLeastSquaresSolver(new TrilaterationFunction(positions, distances), new LevenbergMarquardtOptimizer());
+        LeastSquaresOptimizer.Optimum optimum = solver.solve();
+
+        double[] calculatedPosition = optimum.getPoint().toArray();
+
+    }
 }

@@ -3,24 +3,45 @@ package lilium.arubabacon;
 import android.Manifest;
 import android.annotation.TargetApi;
 import android.app.AlertDialog;
+import android.bluetooth.le.ScanCallback;
+import android.bluetooth.le.ScanFilter;
 import android.bluetooth.le.ScanResult;
+import android.bluetooth.le.ScanSettings;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.database.Cursor;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.RectF;
+import android.graphics.drawable.Drawable;
 import android.os.Build;
+import android.os.Environment;
+import android.support.v4.content.res.ResourcesCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.bluetooth.*;
 import android.database.sqlite.*;
+import android.view.View;
+import android.widget.Button;
+import android.widget.ImageView;
+
+import com.google.android.gms.appindexing.AppIndex;
+import com.google.android.gms.common.api.GoogleApiClient;
+
 import java.util.ArrayList;
-import java.util.Iterator;
 
 import org.apache.commons.math3.fitting.leastsquares.LeastSquaresOptimizer;
 import org.apache.commons.math3.fitting.leastsquares.LevenbergMarquardtOptimizer;
 
 public class MainActivity extends AppCompatActivity {
-    final SQLiteDatabase db = openOrCreateDatabase("BeaconsDB", Context.MODE_PRIVATE, null);
+    SQLiteDatabase db = null;
+    ArrayList<iBeacon> beacons = new ArrayList<>();
+    ArrayList<iBeacon> newBeacons = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -44,7 +65,7 @@ public class MainActivity extends AppCompatActivity {
                 builder.show();
             }
 
-            String[] PERMISSIONS_STORAGE = new String[] {Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE};
+            String[] PERMISSIONS_STORAGE = new String[]{Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE};
             // Check if we have write permission
             int permission = checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE);
             if (permission != PackageManager.PERMISSION_GRANTED) {
@@ -54,31 +75,31 @@ public class MainActivity extends AppCompatActivity {
         }
 
         //get and enable BT adapter
-        BluetoothManager btManager = (BluetoothManager)getSystemService(Context.BLUETOOTH_SERVICE);
+        BluetoothManager btManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
         BluetoothAdapter btAdapter = btManager.getAdapter();
         if (btAdapter != null && !btAdapter.isEnabled()) {
             Intent enableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-            startActivityForResult(enableIntent,1);
+            startActivityForResult(enableIntent, 1);
         }
 
-
+        db = openOrCreateDatabase(Environment.getExternalStorageDirectory().getAbsolutePath() + "/beacons.db", Context.MODE_PRIVATE, null);
         db.execSQL("CREATE TABLE IF NOT EXISTS beacons(mac VARCHAR(12), x double, y double);");
 
         //device discovery for API level 21+
         if (Build.VERSION.SDK_INT >= 21) {
-            android.bluetooth.le.ScanCallback ScanCallback= new android.bluetooth.le.ScanCallback() {
+            ScanCallback ScanCallback = new ScanCallback() {
                 @Override
                 @TargetApi(21)
                 public void onScanResult(int callbackType, ScanResult result) {
-                    updateBeacons(result.getDevice().getAddress(), result.getRssi());
-                    updatePosition();
+                    updateBeacons(result.getDevice().getAddress().replace(":", ""), result.getRssi());
+                    //updatePosition();
                 }
             };
 
-            ArrayList<android.bluetooth.le.ScanFilter> filters = new ArrayList<>();
-            android.bluetooth.le.ScanSettings settings =
-                    new android.bluetooth.le.ScanSettings.Builder()
-                            .setScanMode(android.bluetooth.le.ScanSettings.SCAN_MODE_LOW_LATENCY).build();
+            ArrayList<ScanFilter> filters = new ArrayList<>();
+            ScanSettings settings =
+                    new ScanSettings.Builder()
+                            .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY).build();
             btAdapter.getBluetoothLeScanner().startScan(filters, settings, ScanCallback);
         } else {
             //device discovery for API level 18-20, this is very slow
@@ -88,24 +109,22 @@ public class MainActivity extends AppCompatActivity {
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            updateBeacons(device.getAddress(), rssi);
-                            updatePosition();
+                            updateBeacons(device.getAddress().replace(":", ""), rssi);
+                            //updatePosition();
                         }
                     });
                 }
             };
-
             btAdapter.startLeScan(depScanCallback);
         }
     }
 
-    //update stuff when we receive new beacon data
-    ArrayList<iBeacon> beacons = new ArrayList<>();
-    ArrayList<iBeacon> newBeacons = new ArrayList<>();
     void updateBeacons(String mac, int rssi) {
-        android.database.Cursor c = db.rawQuery("SELECT 1 FROM beacons WHERE mac='" + mac + "'", null);
-        if (c.getCount() == 1) {
-            iBeacon beacon = new iBeacon(mac, rssi, c.getDouble(1), c.getDouble(2));
+        Cursor c = db.rawQuery("SELECT * FROM beacons WHERE mac='" + mac + "'", null);
+        if (c.getCount() > 0) {
+            c.moveToFirst(); //this moves to the first row
+            iBeacon beacon = new iBeacon(mac, rssi,
+                    c.getDouble(c.getColumnIndex("x")), c.getDouble(c.getColumnIndex("y")));
             if (beacons.contains(beacon)) {
                 int b = beacons.indexOf(beacon);
                 beacon = beacons.get(b);
@@ -131,7 +150,7 @@ public class MainActivity extends AppCompatActivity {
             iBeacon beacon = new iBeacon(mac, rssi, -1, -1);
             if (newBeacons.contains(beacon)) {
                 int b = newBeacons.indexOf(beacon);
-                beacon = beacons.get(b);
+                beacon = newBeacons.get(b);
 
                 long now = System.currentTimeMillis();
                 beacon.advertInterval = now - beacon.lastUpdate;
@@ -148,46 +167,67 @@ public class MainActivity extends AppCompatActivity {
 
                 newBeacons.set(b, beacon);
             } else {
-                beacons.add(beacon);
+                newBeacons.add(beacon);
             }
         }
+        c.close();
 
+        String debug = "";
         //remove beacons which have not been updated in a while
         long now = System.currentTimeMillis();
         int index = 0;
-        while(index < beacons.size()){
-            if(now - beacons.get(index).lastUpdate > 1242){
+        while (index < beacons.size()) {
+            if (now - beacons.get(index).lastUpdate > 1242) {
                 beacons.remove(index);
             } else {
+                debug += beacons.get(index).mac + " ";
                 index++;
             }
         }
+
+        debug += " - ";
 
         now = System.currentTimeMillis();
         index = 0;
-        while(index < newBeacons.size()){
-            if(now - newBeacons.get(index).lastUpdate > 1242){
+        while (index < newBeacons.size()) {
+            if (now - newBeacons.get(index).lastUpdate > 1242) {
                 newBeacons.remove(index);
             } else {
+                debug += newBeacons.get(index).mac + " ";
                 index++;
             }
         }
+
+        Bitmap bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.map);
+        bitmap = bitmap.copy(Bitmap.Config.ARGB_8888, true);
+        Canvas canvas = new Canvas(bitmap);
+
+        Paint paint = new Paint();
+        paint.setColor(Color.BLACK);
+        paint.setStyle(Paint.Style.FILL);
+        canvas.translate(0, 50);
+        canvas.scale(4f, 4f);
+        //canvas.drawBitmap(bitmap, null, new RectF(0, 0, bitmap.getWidth(), bitmap.getHeight()), paint);
+        canvas.drawText(debug, 0, 0, new Paint());
+
+        ImageView imageView = (ImageView)findViewById(R.id.imageView);
+        imageView.setImageBitmap(bitmap);
     }
 
-    void placeBeacon(double x, double y){
+    void placeBeacon(double x, double y) {
         int closest = 0;
-        for (int i = 0; i < newBeacons.size(); i++){
+        for (int i = 0; i < newBeacons.size(); i++) {
             if (newBeacons.get(i).rssi > newBeacons.get(closest).rssi) closest = i;
         }
         iBeacon beacon = newBeacons.get(closest);
         beacon.x = x;
         beacon.y = y;
         beacons.add(beacon);
-        db.execSQL("INSERT INTO beacons (mac, x, y) VALUES ("+beacon.mac+","+x+","+y+")");
+        db.execSQL("INSERT INTO beacons (mac, x, y) VALUES ('" + beacon.mac + "'," + x + "," + y + ")");
         newBeacons.remove(closest);
     }
 
-    void updatePosition(){
+    void updatePosition() {
         //https://stackoverflow.com/questions/16485370/wifi-position-triangulation
         //https://en.wikipedia.org/wiki/Trilateration
         //https://github.com/lemmingapex/Trilateration
@@ -195,7 +235,7 @@ public class MainActivity extends AppCompatActivity {
         double[][] positions = new double[beacons.size()][2];
         double[] distances = new double[beacons.size()];
 
-        for (int i = 0; i < beacons.size(); i++){
+        for (int i = 0; i < beacons.size(); i++) {
             positions[i][0] = beacons.get(i).x;
             positions[i][1] = beacons.get(i).y;
             distances[i] = Math.pow(10.0, (-61 - beacons.get(i).rssi) / (10.0 * 2.0));

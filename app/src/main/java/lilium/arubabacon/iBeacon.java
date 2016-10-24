@@ -16,6 +16,7 @@ class iBeacon{
     int highRssi;
 
     iBeacon(String mac, int rssi, double x, double y){
+        this.mac = mac;
         lastUpdate = System.currentTimeMillis();
         this.rssi = rssi;
         lowRssi = rssi;
@@ -28,8 +29,7 @@ class iBeacon{
 
     @Override
     public boolean equals(Object obj) {
-        return obj != null &&
-                iBeacon.class.isAssignableFrom(obj.getClass()) &&
-                ((iBeacon) obj).mac.equals(mac);
+        if (obj == null || !iBeacon.class.isAssignableFrom(obj.getClass())) return false;
+        return ((iBeacon) obj).mac.equals(mac);
     }
 }

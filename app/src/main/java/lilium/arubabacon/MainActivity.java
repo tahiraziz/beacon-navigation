@@ -10,19 +10,14 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Environment;
-import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.bluetooth.*;
-import android.view.KeyEvent;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
-import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.ListView;
-import android.widget.TextView;
-import android.widget.ToggleButton;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -159,7 +154,11 @@ public class MainActivity extends AppCompatActivity {
         });
 
         if (Build.VERSION.SDK_INT >= 21) {
-            btAdapter.getBluetoothLeScanner().startScan(ScanCallback);
+            ArrayList<android.bluetooth.le.ScanFilter> filters = new ArrayList<>();
+            android.bluetooth.le.ScanSettings settings =
+                    new android.bluetooth.le.ScanSettings.Builder()
+                            .setScanMode(android.bluetooth.le.ScanSettings.SCAN_MODE_LOW_LATENCY).build();
+            btAdapter.getBluetoothLeScanner().startScan(filters, settings, ScanCallback);
         } else {
             btAdapter.startLeScan(depScanCallback);
         }

@@ -48,6 +48,8 @@ public class iBeacon{
         minor = (short)( ((scanRecord[27] & 0xFF) << 8) | (scanRecord[28] & 0xFF) );
         tx = scanRecord[29];
         //these beacons are transmitting 62 bytes, an advert packet and scan response packet
+        //No idea what is in the scan record, the first bytes suggest it is the device name
+        //with a length of 30, but the max name length is 15? Could this be some secret pairing key?
         if(scanRecord.length > 31) {
             scanResponse = new byte[scanRecord.length - 30];
             System.arraycopy(scanRecord, 30, scanResponse, 0, scanRecord.length - 30);

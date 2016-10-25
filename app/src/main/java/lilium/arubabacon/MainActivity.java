@@ -26,6 +26,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.bluetooth.*;
 import android.database.sqlite.*;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
@@ -92,7 +93,7 @@ public class MainActivity extends AppCompatActivity {
                 @TargetApi(21)
                 public void onScanResult(int callbackType, ScanResult result) {
                     updateBeacons(result.getDevice().getAddress().replace(":", ""), result.getRssi());
-                    //updatePosition();
+                    updatePosition();
                 }
             };
 
@@ -110,7 +111,7 @@ public class MainActivity extends AppCompatActivity {
                         @Override
                         public void run() {
                             updateBeacons(device.getAddress().replace(":", ""), rssi);
-                            //updatePosition();
+                            updatePosition();
                         }
                     });
                 }
@@ -210,6 +211,8 @@ public class MainActivity extends AppCompatActivity {
         //canvas.drawBitmap(bitmap, null, new RectF(0, 0, bitmap.getWidth(), bitmap.getHeight()), paint);
         canvas.drawText(debug, 0, 0, new Paint());
 
+        canvas.drawText(dist, 0, 100, new Paint());
+
         ImageView imageView = (ImageView)findViewById(R.id.imageView);
         imageView.setImageBitmap(bitmap);
     }
@@ -227,24 +230,32 @@ public class MainActivity extends AppCompatActivity {
         newBeacons.remove(closest);
     }
 
+    String dist = "";
     void updatePosition() {
         //https://stackoverflow.com/questions/16485370/wifi-position-triangulation
         //https://en.wikipedia.org/wiki/Trilateration
         //https://github.com/lemmingapex/Trilateration
 
-        double[][] positions = new double[beacons.size()][2];
-        double[] distances = new double[beacons.size()];
+        if(beacons.size() >= 2) {
+            double[][] positions = new double[beacons.size()][2];
+            double[] distances = new double[beacons.size()];
 
-        for (int i = 0; i < beacons.size(); i++) {
-            positions[i][0] = beacons.get(i).x;
-            positions[i][1] = beacons.get(i).y;
-            distances[i] = Math.pow(10.0, (-61 - beacons.get(i).rssi) / (10.0 * 2.0));
+            for (int i = 0; i < beacons.size(); i++) {
+                positions[i][0] = beacons.get(i).x;
+                positions[i][1] = beacons.get(i).y;
+                //we want linear distances, the distance readings don't have to be accurate
+                //they just need to be consistant across all beacons
+                //because the trilateration function uses them as relative to each other
+                distances[i] = Math.pow(10.0, (-61 - (beacons.get(i).cummulativeRssi / beacons.get(i).numRssi)) / (10.0 * 3.5));
+                Log.v("Lilium", Integer.toString(beacons.get(i).cummulativeRssi / beacons.get(i).numRssi) + " " + Double.toString(distances[i]));
+            }
+
+            NonLinearLeastSquaresSolver solver = new NonLinearLeastSquaresSolver(new TrilaterationFunction(positions, distances), new LevenbergMarquardtOptimizer());
+            LeastSquaresOptimizer.Optimum optimum = solver.solve();
+
+            double[] calculatedPosition = optimum.getPoint().toArray();
+            dist = Double.toString(calculatedPosition[0]) + " " + Double.toString(calculatedPosition[1]);
+            Log.v("Lilium", dist);
         }
-
-        NonLinearLeastSquaresSolver solver = new NonLinearLeastSquaresSolver(new TrilaterationFunction(positions, distances), new LevenbergMarquardtOptimizer());
-        LeastSquaresOptimizer.Optimum optimum = solver.solve();
-
-        double[] calculatedPosition = optimum.getPoint().toArray();
-
     }
 }

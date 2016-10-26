@@ -35,6 +35,7 @@ import android.widget.ListView;
 import com.davemorrissey.labs.subscaleview.ImageSource;
 import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -139,8 +140,8 @@ public class MainActivity extends AppCompatActivity {
 
     void setup() {
         //init database
-        db = openOrCreateDatabase(Environment.getExternalStorageDirectory().getAbsolutePath() + "/beacons.db", Context.MODE_PRIVATE, null);
-        db.execSQL("DROP TABLE beacons");
+        db = SQLiteDatabase.openOrCreateDatabase(Environment.getExternalStorageDirectory().getAbsolutePath() + "/beacons.db", null);
+        db.execSQL("DROP TABLE IF EXISTS beacons");
         db.execSQL("CREATE TABLE IF NOT EXISTS beacons(mac VARCHAR(12), x float, y float);");
 
         //device discovery for API level 21+
@@ -195,8 +196,8 @@ public class MainActivity extends AppCompatActivity {
         });
 
         newBeaconMarker = (ImageView) findViewById(R.id.newBeaconMarker);
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
+        FloatingActionButton placeBeacon = (FloatingActionButton) findViewById(R.id.placeBeacon);
+        placeBeacon.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 if (!adapter.isEmpty()) {
@@ -215,7 +216,7 @@ public class MainActivity extends AppCompatActivity {
         beaconListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int index, long id) {
-                PointF pos = map.viewToSourceCoord(newBeaconMarker.getX(), newBeaconMarker.getY());
+                PointF pos = map.viewToSourceCoord(newBeaconMarker.getX() + newBeaconMarker.getWidth() / 2, newBeaconMarker.getY() + newBeaconMarker.getHeight() / 2);
                 iBeacon beacon = newBeacons.get(index);
                 beacon.x = pos.x;
                 beacon.y = pos.y;

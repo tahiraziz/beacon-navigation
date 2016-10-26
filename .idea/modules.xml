@@ -4,6 +4,7 @@
     <modules>
       <module fileurl="file://$PROJECT_DIR$/ArubaBacon.iml" filepath="$PROJECT_DIR$/ArubaBacon.iml" />
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
+      <module fileurl="file://$PROJECT_DIR$/subsampling-scale-image-view-3.5.0/subsampling-scale-image-view-3.5.0.iml" filepath="$PROJECT_DIR$/subsampling-scale-image-view-3.5.0/subsampling-scale-image-view-3.5.0.iml" />
     </modules>
   </component>
 </project>

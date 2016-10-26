@@ -3,8 +3,8 @@ package lilium.arubabacon;
 class iBeacon{
     //everything is public because of AMERICAN FREEDOM
     String mac;
-    double x;
-    double y;
+    float x;
+    float y;
 
     long lastUpdate;
     long advertInterval;
@@ -15,7 +15,7 @@ class iBeacon{
     int numRssi;
     int highRssi;
 
-    iBeacon(String mac, int rssi, double x, double y){
+    iBeacon(String mac, int rssi, float x, float y){
         this.mac = mac;
         lastUpdate = System.currentTimeMillis();
         this.rssi = rssi;
@@ -31,5 +31,10 @@ class iBeacon{
     public boolean equals(Object obj) {
         if (obj == null || !iBeacon.class.isAssignableFrom(obj.getClass())) return false;
         return ((iBeacon) obj).mac.equals(mac);
+    }
+
+    @Override
+    public String toString(){
+        return mac;
     }
 }

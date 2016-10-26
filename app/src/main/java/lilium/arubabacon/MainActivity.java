@@ -61,54 +61,21 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
         checkPermissions();
     }
 
     void checkPermissions(){
         //android 6.0 requires runtime user permission (api level 23 required...)
         if (Build.VERSION.SDK_INT >= 23) {
-            if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.ACCESS_FINE_LOCATION)) {
-                    final AlertDialog.Builder builder = new AlertDialog.Builder(this);
-                    builder.setTitle("This app needs location access");
-                    builder.setMessage("Please grant location access so this app can detect beacons.");
-                    builder.setPositiveButton(android.R.string.ok, null);
-                    builder.setOnDismissListener(new DialogInterface.OnDismissListener() {
-                        @TargetApi(23)
-                        public void onDismiss(DialogInterface dialog) {
-                            requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 1);
-                        }
-                    });
-                    builder.show();
-                } else {
-                    requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 1);
-                }
-            }
-
-            if (checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED
-                    || checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-                if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.ACCESS_FINE_LOCATION)) {
-                    final AlertDialog.Builder builder = new AlertDialog.Builder(this);
-                    builder.setTitle("This app needs filesystem access");
-                    builder.setMessage("Please grant read/write access so this app can save and load the beacon database.");
-                    builder.setPositiveButton(android.R.string.ok, null);
-                    builder.setOnDismissListener(new DialogInterface.OnDismissListener() {
-                        @TargetApi(23)
-                        public void onDismiss(DialogInterface dialog) {
-                            requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE}, 2);
-                        }
-                    });
-                    builder.show();
-                } else {
-                    requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE}, 2);
-                }
-            }
-
-            //final check
             if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
                     && checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED
-                    && checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) checkBluetooth();
+                    && checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED)
+            {
+                checkBluetooth();
+            }
+            else{
+                requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1);
+            }
         } else {
             checkBluetooth();
         }
@@ -311,6 +278,7 @@ public class MainActivity extends AppCompatActivity {
             double[][] positions = new double[beacons.size()][2];
             double[] distances = new double[beacons.size()];
 
+            Log.v("Lilium", Integer.toString(beacons.size()));
             for (int i = 0; i < beacons.size(); i++) {
                 positions[i][0] = beacons.get(i).x;
                 positions[i][1] = beacons.get(i).y;
@@ -318,7 +286,6 @@ public class MainActivity extends AppCompatActivity {
                 //they just need to be consistent across all beacons
                 //because the trilateration function uses them as relative to each other
                 distances[i] = Math.pow(10.0, (-61 - (beacons.get(i).cummulativeRssi / beacons.get(i).numRssi)) / (10.0 * 3.5));
-                //Log.v("Lilium", Integer.toString(beacons.get(i).cummulativeRssi / beacons.get(i).numRssi) + " " + Double.toString(distances[i]));
             }
 
             NonLinearLeastSquaresSolver solver = new NonLinearLeastSquaresSolver(new TrilaterationFunction(positions, distances), new LevenbergMarquardtOptimizer());
@@ -326,7 +293,6 @@ public class MainActivity extends AppCompatActivity {
 
             double[] calculatedPosition = optimum.getPoint().toArray();
             position = new PointF((float)calculatedPosition[0], (float)calculatedPosition[1]);
-            //Log.v("Lilium", Double.toString(calculatedPosition[0]) + " " + Double.toString(calculatedPosition[1]));
 
             map.invalidate();
         }

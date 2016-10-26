@@ -3,7 +3,6 @@ package lilium.arubabacon;
 import android.Manifest;
 import android.annotation.TargetApi;
 import android.app.AlertDialog;
-import android.app.Dialog;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
@@ -22,6 +21,7 @@ import android.os.Build;
 import android.os.Environment;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
+import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -43,8 +43,11 @@ import org.apache.commons.math3.fitting.leastsquares.LevenbergMarquardtOptimizer
 
 public class MainActivity extends AppCompatActivity {
     SubsamplingScaleImageView map;
-    ImageView locationView;
+    ImageView newBeaconMarker;
     ListView beaconListView;
+
+    BluetoothManager btManager;
+    BluetoothAdapter btAdapter;
 
     SQLiteDatabase db = null;
     static ArrayList<iBeacon> beacons = new ArrayList<>();
@@ -58,85 +61,83 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        checkPermissions();
+    }
+
+    void checkPermissions(){
         //android 6.0 requires runtime user permission (api level 23 required...)
         if (Build.VERSION.SDK_INT >= 23) {
-            // Android M Permission check 
-            if (this.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                final AlertDialog.Builder builder = new AlertDialog.Builder(this);
-                builder.setTitle("This app needs location access");
-                builder.setMessage("Please grant location access so this app can detect beacons.");
-                builder.setPositiveButton(android.R.string.ok, null);
-                builder.setOnDismissListener(new DialogInterface.OnDismissListener() {
-                    @TargetApi(23)
-                    public void onDismiss(DialogInterface dialog) {
-                        requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 1);
-                    }
-                });
-                builder.show();
+            if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.ACCESS_FINE_LOCATION)) {
+                    final AlertDialog.Builder builder = new AlertDialog.Builder(this);
+                    builder.setTitle("This app needs location access");
+                    builder.setMessage("Please grant location access so this app can detect beacons.");
+                    builder.setPositiveButton(android.R.string.ok, null);
+                    builder.setOnDismissListener(new DialogInterface.OnDismissListener() {
+                        @TargetApi(23)
+                        public void onDismiss(DialogInterface dialog) {
+                            requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 1);
+                        }
+                    });
+                    builder.show();
+                } else {
+                    requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 1);
+                }
             }
 
-            String[] PERMISSIONS_STORAGE = new String[]{Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE};
-            // Check if we have write permission
-            int permission = checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE);
-            if (permission != PackageManager.PERMISSION_GRANTED) {
-                // We don't have permission so prompt the user
-                requestPermissions(PERMISSIONS_STORAGE, 1);
+            if (checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED
+                    || checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+                if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.ACCESS_FINE_LOCATION)) {
+                    final AlertDialog.Builder builder = new AlertDialog.Builder(this);
+                    builder.setTitle("This app needs filesystem access");
+                    builder.setMessage("Please grant read/write access so this app can save and load the beacon database.");
+                    builder.setPositiveButton(android.R.string.ok, null);
+                    builder.setOnDismissListener(new DialogInterface.OnDismissListener() {
+                        @TargetApi(23)
+                        public void onDismiss(DialogInterface dialog) {
+                            requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE}, 2);
+                        }
+                    });
+                    builder.show();
+                } else {
+                    requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE}, 2);
+                }
             }
+
+            //final check
+            if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+                    && checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED
+                    && checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) checkBluetooth();
+        } else {
+            checkBluetooth();
         }
+    }
 
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
+        checkPermissions();
+    }
+
+    void checkBluetooth(){
         //get and enable BT adapter
-        BluetoothManager btManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
-        BluetoothAdapter btAdapter = btManager.getAdapter();
+        btManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
+        btAdapter = btManager.getAdapter();
         if (btAdapter != null && !btAdapter.isEnabled()) {
             Intent enableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
             startActivityForResult(enableIntent, 1);
+        } else {
+            setup();
         }
+    }
 
-        //map imageView
-        map = (SubsamplingScaleImageView) findViewById(R.id.map);
-        map.setImage(ImageSource.resource(R.mipmap.map));
-        map.setOnTouchListener(new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                locationView.setX(event.getX() - locationView.getWidth() / 2);
-                locationView.setY(event.getY() - locationView.getHeight() / 2);
-                locationView.setVisibility(View.VISIBLE);
-                return false;
-            }
-        });
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (requestCode == 1) {
+            checkBluetooth();
+        }
+    }
 
-        //new beacon list
-        beaconListView = (ListView) findViewById(R.id.beaconListView);
-        adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, newBeacons);
-        beaconListView.setAdapter(adapter);
-        beaconListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> parent, View view, int index, long id) {
-                iBeacon beacon = newBeacons.get(index);
-                beacon.x = locationView.getX();
-                beacon.y = locationView.getY();
-                db.execSQL("INSERT INTO beacons (mac, x, y) VALUES ('" + beacon.mac + "'," + locationView.getX() + "," + locationView.getY() + ")");
-                beacons.add(beacon);
-                newBeacons.remove(beacon);
-                adapter.notifyDataSetChanged();
-                beaconListView.setVisibility(View.INVISIBLE);
-            }
-        });
-
-        locationView = (ImageView) findViewById(R.id.imageLocation);
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                if (!adapter.isEmpty()) {
-                    beaconListView.setVisibility(View.VISIBLE);
-                }else{
-                    Snackbar.make(view, "There are no new configurable beacons nearby.", Snackbar.LENGTH_LONG)
-                            .setAction("Action", null).show();
-                }
-            }
-        });
-
+    void setup() {
         //init database
         db = openOrCreateDatabase(Environment.getExternalStorageDirectory().getAbsolutePath() + "/beacons.db", Context.MODE_PRIVATE, null);
         db.execSQL("DROP TABLE beacons");
@@ -179,6 +180,53 @@ public class MainActivity extends AppCompatActivity {
             };
             btAdapter.startLeScan(depScanCallback);
         }
+
+        //map imageView
+        map = (SubsamplingScaleImageView) findViewById(R.id.map);
+        map.setImage(ImageSource.resource(R.mipmap.map));
+        map.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                newBeaconMarker.setX(event.getX() - newBeaconMarker.getWidth() / 2);
+                newBeaconMarker.setY(event.getY() - newBeaconMarker.getHeight() / 2);
+                newBeaconMarker.setVisibility(View.VISIBLE);
+                return false;
+            }
+        });
+
+        newBeaconMarker = (ImageView) findViewById(R.id.newBeaconMarker);
+        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
+        fab.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (!adapter.isEmpty()) {
+                    beaconListView.setVisibility(View.VISIBLE);
+                }else{
+                    Snackbar.make(view, "There are no new configurable beacons nearby.", Snackbar.LENGTH_LONG)
+                            .setAction("Action", null).show();
+                }
+            }
+        });
+
+        //new beacon list
+        beaconListView = (ListView) findViewById(R.id.beaconListView);
+        adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, newBeacons);
+        beaconListView.setAdapter(adapter);
+        beaconListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int index, long id) {
+                PointF pos = map.viewToSourceCoord(newBeaconMarker.getX(), newBeaconMarker.getY());
+                iBeacon beacon = newBeacons.get(index);
+                beacon.x = pos.x;
+                beacon.y = pos.y;
+                db.execSQL("INSERT INTO beacons (mac, x, y) VALUES ('" + beacon.mac + "'," + pos.x + "," + pos.y + ")");
+                beacons.add(beacon);
+                newBeacons.remove(beacon);
+                adapter.notifyDataSetChanged();
+                beaconListView.setVisibility(View.INVISIBLE);
+                map.invalidate();
+            }
+        });
     }
 
     void updateBeacons(String mac, int rssi) {

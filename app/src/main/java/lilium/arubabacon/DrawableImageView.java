@@ -15,7 +15,8 @@ import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView;
 import static lilium.arubabacon.MainActivity.beacons;
 
 public class DrawableImageView extends SubsamplingScaleImageView {
-    Bitmap b = BitmapFactory.decodeResource(getResources(), R.mipmap.ic_launcher);
+    Bitmap b = BitmapFactory.decodeResource(getResources(), R.mipmap.beacon);
+    Bitmap marker = BitmapFactory.decodeResource(getResources(), R.mipmap.beacon);
     Paint p = new Paint();
 
     public DrawableImageView(Context context, AttributeSet attr) {
@@ -30,7 +31,7 @@ public class DrawableImageView extends SubsamplingScaleImageView {
             PointF offset = sourceToViewCoord(beacons.get(i).x, beacons.get(i).y);
             if (offset != null) {
                 Matrix matrix = new Matrix();
-                matrix.postTranslate(offset.x, offset.y);
+                matrix.postTranslate(offset.x - b.getWidth() / 2, offset.y - b.getHeight() / 2);
                 canvas.drawBitmap(b, matrix, p);
             }
         }
@@ -39,7 +40,7 @@ public class DrawableImageView extends SubsamplingScaleImageView {
         if (offset != null) {
             Matrix matrix = new Matrix();
             matrix.postTranslate(offset.x, offset.y);
-            canvas.drawBitmap(b, matrix, p);
+            canvas.drawBitmap(marker, matrix, p);
         }
     }
 }

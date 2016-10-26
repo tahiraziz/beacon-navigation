@@ -17,23 +17,15 @@ import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
-import android.graphics.RectF;
-import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Environment;
-import android.support.v4.content.res.ResourcesCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.bluetooth.*;
 import android.database.sqlite.*;
 import android.util.Log;
 import android.view.View;
-import android.widget.Button;
 import android.widget.ImageView;
-
-import com.google.android.gms.appindexing.AppIndex;
-import com.google.android.gms.common.api.GoogleApiClient;
-
 import java.util.ArrayList;
 
 import org.apache.commons.math3.fitting.leastsquares.LeastSquaresOptimizer;
@@ -43,6 +35,12 @@ public class MainActivity extends AppCompatActivity {
     SQLiteDatabase db = null;
     ArrayList<iBeacon> beacons = new ArrayList<>();
     ArrayList<iBeacon> newBeacons = new ArrayList<>();
+
+    protected void startMap(View v){
+        Intent map = new Intent();
+        Intent myIntent = new Intent(MainActivity.this, MapActivity.class);
+        MainActivity.this.startActivity(myIntent);
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -220,7 +218,7 @@ public class MainActivity extends AppCompatActivity {
     void placeBeacon(double x, double y) {
         int closest = 0;
         for (int i = 0; i < newBeacons.size(); i++) {
-            if (newBeacons.get(i).rssi > newBeacons.get(closest).rssi) closest = i;
+            if (newBeacons.get(i).rssi > newBeacons.get(closest).cummulativeRssi / newBeacons.get(closest).numRssi) closest = i;
         }
         iBeacon beacon = newBeacons.get(closest);
         beacon.x = x;

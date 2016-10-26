@@ -19,11 +19,15 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.os.Build;
 import android.os.Environment;
+import android.support.design.widget.FloatingActionButton;
+import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.bluetooth.*;
 import android.database.sqlite.*;
+import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.view.MotionEvent;
 import android.view.View;
 import android.widget.ImageView;
 import java.util.ArrayList;
@@ -36,16 +40,34 @@ public class MainActivity extends AppCompatActivity {
     ArrayList<iBeacon> beacons = new ArrayList<>();
     ArrayList<iBeacon> newBeacons = new ArrayList<>();
 
-    protected void startMap(View v){
-        Intent map = new Intent();
-        Intent myIntent = new Intent(MainActivity.this, MapActivity.class);
-        MainActivity.this.startActivity(myIntent);
-    };
+    ImageView map;
+    ImageView locationView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        //map stuff
+        map = (ImageView) findViewById(R.id.imageView);
+        locationView = (ImageView) findViewById(R.id.imageLocation);
+        map.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                locationView.setX(event.getX() - locationView.getWidth() / 2);
+                locationView.setY(event.getY() - locationView.getHeight() / 2);
+                locationView.setVisibility(View.VISIBLE);
+                return false;
+            }
+        });
+        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
+        fab.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
+                        .setAction("Action", null).show();
+            }
+        });
 
         //android 6.0 requires runtime user permission (api level 23 required...)
         if (Build.VERSION.SDK_INT >= 23) {
@@ -197,7 +219,7 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
-        Bitmap bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.map);
+        Bitmap bitmap = BitmapFactory.decodeResource(getResources(), R.mipmap.ecss3);
         bitmap = bitmap.copy(Bitmap.Config.ARGB_8888, true);
         Canvas canvas = new Canvas(bitmap);
 
@@ -211,8 +233,7 @@ public class MainActivity extends AppCompatActivity {
 
         canvas.drawText(dist, 0, 100, new Paint());
 
-        ImageView imageView = (ImageView)findViewById(R.id.imageView);
-        imageView.setImageBitmap(bitmap);
+        map.setImageBitmap(bitmap);
     }
 
     void placeBeacon(double x, double y) {

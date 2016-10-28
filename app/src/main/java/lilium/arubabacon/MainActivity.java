@@ -2,7 +2,6 @@ package lilium.arubabacon;
 
 import android.Manifest;
 import android.annotation.TargetApi;
-import android.app.AlertDialog;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
@@ -11,7 +10,6 @@ import android.bluetooth.le.ScanFilter;
 import android.bluetooth.le.ScanResult;
 import android.bluetooth.le.ScanSettings;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
@@ -21,9 +19,9 @@ import android.os.Build;
 import android.os.Environment;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
-import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.widget.AppCompatTextView;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
@@ -35,7 +33,6 @@ import android.widget.ListView;
 import com.davemorrissey.labs.subscaleview.ImageSource;
 import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -123,6 +120,7 @@ public class MainActivity extends AppCompatActivity {
                     if (Arrays.equals(prefix, new byte[] {0x02,0x01,0x06,0x1a,(byte)0xff,0x4c,0x00,0x02,0x15})) {
                         updateBeacons(result.getDevice().getAddress().replace(":", ""), result.getRssi());
                         updatePosition();
+                        map.invalidate();
                     }
                 }
             };
@@ -143,6 +141,7 @@ public class MainActivity extends AppCompatActivity {
                     if (Arrays.equals(prefix, new byte[] {0x02,0x01,0x06,0x1a,(byte)0xff,0x4c,0x00,0x02,0x15})) {
                         updateBeacons(device.getAddress().replace(":", ""), rssi);
                         updatePosition();
+                        map.invalidate();
                     }
                 }
             };
@@ -177,19 +176,29 @@ public class MainActivity extends AppCompatActivity {
         });
 
         //new beacon list
-        beaconListView = (ListView) findViewById(R.id.beaconListView);
+        beaconListView = (kludgeListView) findViewById(R.id.beaconListView);
         adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, newBeacons);
         beaconListView.setAdapter(adapter);
         beaconListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int index, long id) {
                 PointF pos = map.viewToSourceCoord(newBeaconMarker.getX() + newBeaconMarker.getWidth() / 2, newBeaconMarker.getY() + newBeaconMarker.getHeight() / 2);
-                iBeacon beacon = newBeacons.get(index);
-                beacon.x = pos.x;
-                beacon.y = pos.y;
-                db.execSQL("INSERT INTO beacons (mac, x, y) VALUES ('" + beacon.mac + "'," + pos.x + "," + pos.y + ")");
-                beacons.add(beacon);
-                newBeacons.remove(beacon);
+                //Since the ArrayList in the Adapter is constantly changing,
+                //we can't trust that it will contain the item at index.
+                //We only need the MAC address, so we can pull the string from the TextViews of the ArrayList
+                String mac = ((AppCompatTextView)beaconListView.getChildAt(index)).getText().toString();
+                db.execSQL("INSERT INTO beacons (mac, x, y) VALUES ('" + mac + "'," + pos.x + "," + pos.y + ")");
+
+                //Try to move the beacon from newBeacons to beacons, if it still exists
+                //Create a new beacon so we don't have to reference and old one.
+                iBeacon beacon = new iBeacon(mac, -1, pos.x, pos.y);
+                if (newBeacons.contains(beacon)) {
+                    beacons.add(beacon);
+                    //.remove relies on the iBeacon.equals, so if the iBeacon doesn't exist it shouldn't crash
+                    newBeacons.remove(beacon);
+                }
+
+
                 adapter.notifyDataSetChanged();
                 beaconListView.setVisibility(View.INVISIBLE);
                 map.invalidate();
@@ -293,8 +302,6 @@ public class MainActivity extends AppCompatActivity {
 
             double[] calculatedPosition = optimum.getPoint().toArray();
             position = new PointF((float)calculatedPosition[0], (float)calculatedPosition[1]);
-
-            map.invalidate();
         }
     }
 }

@@ -15,6 +15,7 @@ import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.PointF;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Environment;
 import android.support.design.widget.FloatingActionButton;
@@ -35,7 +36,9 @@ import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.apache.commons.math3.analysis.function.Add;
 import org.apache.commons.math3.fitting.leastsquares.LeastSquaresOptimizer;
 import org.apache.commons.math3.fitting.leastsquares.LevenbergMarquardtOptimizer;
 
@@ -46,11 +49,14 @@ public class MainActivity extends AppCompatActivity {
 
     BluetoothManager btManager;
     BluetoothAdapter btAdapter;
+    AtomicBoolean AddingBeacon = new AtomicBoolean();
 
     SQLiteDatabase db = null;
     static ArrayList<iBeacon> beacons = new ArrayList<>();
     ArrayList<iBeacon> newBeacons = new ArrayList<>();
     ArrayAdapter<iBeacon> adapter;
+
+
 
     static PointF position = new PointF(0, 0);
 
@@ -58,6 +64,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        AddingBeacon.set(false);
         checkPermissions();
     }
 
@@ -139,8 +146,10 @@ public class MainActivity extends AppCompatActivity {
                     byte[] prefix = new byte[9];
                     System.arraycopy(scanRecord, 0, prefix, 0, 9);
                     if (Arrays.equals(prefix, new byte[] {0x02,0x01,0x06,0x1a,(byte)0xff,0x4c,0x00,0x02,0x15})) {
-                        updateBeacons(device.getAddress().replace(":", ""), rssi);
-                        updatePosition();
+                        new updatePositionTask().execute(new updateBeaconsArgs(device.getAddress().replace(":", ""), rssi));
+                        //updateBeacons(device.getAddress().replace(":", ""), rssi);
+                        //updatePosition();
+
                         map.invalidate();
                     }
                 }
@@ -176,12 +185,13 @@ public class MainActivity extends AppCompatActivity {
         });
 
         //new beacon list
-        beaconListView = (kludgeListView) findViewById(R.id.beaconListView);
+        beaconListView = (ListView) findViewById(R.id.beaconListView);
         adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, newBeacons);
         beaconListView.setAdapter(adapter);
         beaconListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int index, long id) {
+                AddingBeacon.set(true);
                 PointF pos = map.viewToSourceCoord(newBeaconMarker.getX() + newBeaconMarker.getWidth() / 2, newBeaconMarker.getY() + newBeaconMarker.getHeight() / 2);
                 //Since the ArrayList in the Adapter is constantly changing,
                 //we can't trust that it will contain the item at index.
@@ -202,8 +212,34 @@ public class MainActivity extends AppCompatActivity {
                 adapter.notifyDataSetChanged();
                 beaconListView.setVisibility(View.INVISIBLE);
                 map.invalidate();
+                AddingBeacon.set(false);
             }
         });
+    }
+
+    private class updateBeaconsArgs{
+        public String mac;
+        public int rssi;
+        public updateBeaconsArgs(String Mac, int Rssi){
+            mac = Mac;
+            rssi = Rssi;
+        }
+    }
+
+    private class updatePositionTask extends AsyncTask<updateBeaconsArgs,Void,Void> {
+        /** The system calls this to perform work in a worker thread and
+         * delivers it the parameters given to AsyncTask.execute() */
+
+        protected Void doInBackground(updateBeaconsArgs ... args) {
+            updateBeacons(args[0].mac, args[0].rssi);
+            return null;
+        }
+
+        /** The system calls this to perform work in the UI thread and delivers
+         * the result from doInBackground() */
+        protected void onPostExecute() {
+            updatePosition();
+        }
     }
 
     void updateBeacons(String mac, int rssi) {
@@ -272,7 +308,7 @@ public class MainActivity extends AppCompatActivity {
 
         now = System.currentTimeMillis();
         index = 0;
-        while (index < newBeacons.size()) {
+        while (!AddingBeacon.get() && index < newBeacons.size()) {
             if (now - newBeacons.get(index).lastUpdate > 1242) {
                 newBeacons.remove(index);
             } else {

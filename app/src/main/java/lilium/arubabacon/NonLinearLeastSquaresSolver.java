@@ -19,7 +19,7 @@ public class NonLinearLeastSquaresSolver {
     protected final TrilaterationFunction function;
     protected final LeastSquaresOptimizer leastSquaresOptimizer;
 
-    protected final static int MAXNUMBEROFITERATIONS = 1000;
+    protected final static int MAXNUMBEROFITERATIONS = 10000;
 
     public NonLinearLeastSquaresSolver(TrilaterationFunction function, LeastSquaresOptimizer leastSquaresOptimizer) {
         this.function = function;
@@ -36,7 +36,7 @@ public class NonLinearLeastSquaresSolver {
                 function,
                 // target values at optimal point in least square equation
                 // (x0+xi)^2 + (y0+yi)^2 + ri^2 = target[i]
-                new ArrayRealVector(target, false), new ArrayRealVector(initialPoint, false), new DiagonalMatrix(weights), null, MAXNUMBEROFITERATIONS, MAXNUMBEROFITERATIONS);
+                new ArrayRealVector(target, false), new ArrayRealVector(initialPoint, false), new DiagonalMatrix(weights), null, 1000, MAXNUMBEROFITERATIONS);
 
         return leastSquaresOptimizer.optimize(leastSquaresProblem);
     }

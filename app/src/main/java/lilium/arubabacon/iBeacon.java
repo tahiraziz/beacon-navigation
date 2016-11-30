@@ -40,4 +40,8 @@ class iBeacon{
     public String toString(){
         return mac;
     }
+
+    public double distance(){
+        return 2 / Math.pow(10.0, (-61 - (cummulativeRssi / numRssi)) / (10.0));
+    }
 }

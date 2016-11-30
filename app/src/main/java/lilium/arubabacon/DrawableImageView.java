@@ -13,7 +13,9 @@ import android.util.AttributeSet;
 //https://github.com/davemorrissey/subsampling-scale-image-view
 import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView;
 
-import static lilium.arubabacon.MainActivity.beacons;
+import java.util.ArrayList;
+
+import static lilium.arubabacon.MainActivity.beaconKeeper;
 
 public class DrawableImageView extends SubsamplingScaleImageView {
     Bitmap b = BitmapFactory.decodeResource(getResources(), R.mipmap.beacon);
@@ -27,15 +29,17 @@ public class DrawableImageView extends SubsamplingScaleImageView {
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
-
+        ArrayList<iBeacon> beacons = beaconKeeper.clonePlaced();
         for(int i = 0; i < beacons.size(); i++) {
             PointF offset = sourceToViewCoord(beacons.get(i).x, beacons.get(i).y);
             if (offset != null) {
                 Matrix matrix = new Matrix();
                 matrix.postTranslate(offset.x - b.getWidth() / 2, offset.y - b.getHeight() / 2);
                 canvas.drawBitmap(b, matrix, p);
-                canvas.drawText(String.valueOf(beacons.get(i).cummulativeRssi / beacons.get(i).numRssi),offset.x - b.getWidth() / 8,offset.y - b.getHeight() / 4, p);
-                canvas.drawText(String.valueOf(Math.sqrt(Math.pow(10.0, (-61 - (beacons.get(i).cummulativeRssi / beacons.get(i).numRssi)) / (10.0)))),offset.x - b.getWidth() / 8,offset.y + b.getHeight() / 4, p);
+                //canvas.drawText(String.valueOf(beaconKeeper.placedBeacons.get(i).cummulativeRssi / beaconKeeper.placedBeacons.get(i).numRssi),
+                //        offset.x - b.getWidth() / 8,offset.y - b.getHeight() / 4, p);
+                //canvas.drawText(String.valueOf(Math.sqrt(Math.pow(10.0, (-61 - (beaconKeeper.placedBeacons.get(i).cummulativeRssi /
+                //        beaconKeeper.placedBeacons.get(i).numRssi)) / (10.0)))),offset.x - b.getWidth() / 8,offset.y + b.getHeight() / 4, p);
             }
         }
 

@@ -1,5 +1,7 @@
 package lilium.arubabacon;
 
+import android.widget.TextView;
+
 class iBeacon{
     //everything is public because of AMERICAN FREEDOM
     String mac;
@@ -14,6 +16,7 @@ class iBeacon{
     int cummulativeRssi;
     int numRssi;
     int highRssi;
+    TextView text;
 
     iBeacon(String mac, int rssi, float x, float y){
         this.mac = mac;

@@ -4,6 +4,7 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.PointF;
@@ -33,6 +34,8 @@ public class DrawableImageView extends SubsamplingScaleImageView {
                 Matrix matrix = new Matrix();
                 matrix.postTranslate(offset.x - b.getWidth() / 2, offset.y - b.getHeight() / 2);
                 canvas.drawBitmap(b, matrix, p);
+                canvas.drawText(String.valueOf(beacons.get(i).cummulativeRssi / beacons.get(i).numRssi),offset.x - b.getWidth() / 8,offset.y - b.getHeight() / 4, p);
+                canvas.drawText(String.valueOf(Math.sqrt(Math.pow(10.0, (-61 - (beacons.get(i).cummulativeRssi / beacons.get(i).numRssi)) / (10.0)))),offset.x - b.getWidth() / 8,offset.y + b.getHeight() / 4, p);
             }
         }
 

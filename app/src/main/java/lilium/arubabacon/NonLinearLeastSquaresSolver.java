@@ -42,7 +42,7 @@ public class NonLinearLeastSquaresSolver {
     }
 
     public Optimum solve(double[] target, double[] weights, double[] initialPoint) {
-        return solve(target, weights, initialPoint, false);
+            return solve(target, weights, initialPoint, false);
     }
 
     public Optimum solve(boolean debugInfo) {

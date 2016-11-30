@@ -15,6 +15,7 @@ import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.PointF;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Environment;
@@ -30,15 +31,23 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.ListView;
+import android.widget.TextView;
 
 import com.davemorrissey.labs.subscaleview.ImageSource;
 import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView;
+import com.google.android.gms.appindexing.Action;
+import com.google.android.gms.appindexing.AppIndex;
+import com.google.android.gms.appindexing.Thing;
+import com.google.android.gms.common.api.GoogleApiClient;
 
+import java.io.Console;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.commons.math3.analysis.function.Add;
+import org.apache.commons.math3.exception.TooManyEvaluationsException;
+import org.apache.commons.math3.fitting.leastsquares.GaussNewtonOptimizer;
 import org.apache.commons.math3.fitting.leastsquares.LeastSquaresOptimizer;
 import org.apache.commons.math3.fitting.leastsquares.LevenbergMarquardtOptimizer;
 
@@ -46,6 +55,7 @@ public class MainActivity extends AppCompatActivity {
     SubsamplingScaleImageView map;
     ImageView newBeaconMarker;
     ListView beaconListView;
+    TextView minRssiTextView;
 
     BluetoothManager btManager;
     BluetoothAdapter btAdapter;
@@ -57,8 +67,12 @@ public class MainActivity extends AppCompatActivity {
     ArrayAdapter<iBeacon> adapter;
 
 
-
     static PointF position = new PointF(0, 0);
+    /**
+     * ATTENTION: This was auto-generated to implement the App Indexing API.
+     * See https://g.co/AppIndexing/AndroidStudio for more information.
+     */
+    private GoogleApiClient client;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -66,18 +80,20 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         AddingBeacon.set(false);
         checkPermissions();
+        minRssiTextView = (TextView) findViewById(R.id.textView);
+        // ATTENTION: This was auto-generated to implement the App Indexing API.
+        // See https://g.co/AppIndexing/AndroidStudio for more information.
+        client = new GoogleApiClient.Builder(this).addApi(AppIndex.API).build();
     }
 
-    void checkPermissions(){
+    void checkPermissions() {
         //android 6.0 requires runtime user permission (api level 23 required...)
         if (Build.VERSION.SDK_INT >= 23) {
             if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
                     && checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED
-                    && checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED)
-            {
+                    && checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
                 checkBluetooth();
-            }
-            else{
+            } else {
                 requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1);
             }
         } else {
@@ -90,7 +106,7 @@ public class MainActivity extends AppCompatActivity {
         checkPermissions();
     }
 
-    void checkBluetooth(){
+    void checkBluetooth() {
         //get and enable BT adapter
         btManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
         btAdapter = btManager.getAdapter();
@@ -124,7 +140,7 @@ public class MainActivity extends AppCompatActivity {
                     //filter out anything that is not an Aruba
                     byte[] prefix = new byte[9];
                     System.arraycopy(result.getScanRecord().getBytes(), 0, prefix, 0, 9);
-                    if (Arrays.equals(prefix, new byte[] {0x02,0x01,0x06,0x1a,(byte)0xff,0x4c,0x00,0x02,0x15})) {
+                    if (Arrays.equals(prefix, new byte[]{0x02, 0x01, 0x06, 0x1a, (byte) 0xff, 0x4c, 0x00, 0x02, 0x15})) {
                         updateBeacons(result.getDevice().getAddress().replace(":", ""), result.getRssi());
                         updatePosition();
                         map.invalidate();
@@ -145,11 +161,10 @@ public class MainActivity extends AppCompatActivity {
                     //filter out anything that is not an Aruba
                     byte[] prefix = new byte[9];
                     System.arraycopy(scanRecord, 0, prefix, 0, 9);
-                    if (Arrays.equals(prefix, new byte[] {0x02,0x01,0x06,0x1a,(byte)0xff,0x4c,0x00,0x02,0x15})) {
+                    if (Arrays.equals(prefix, new byte[]{0x02, 0x01, 0x06, 0x1a, (byte) 0xff, 0x4c, 0x00, 0x02, 0x15})) {
                         new updatePositionTask().execute(new updateBeaconsArgs(device.getAddress().replace(":", ""), rssi));
                         //updateBeacons(device.getAddress().replace(":", ""), rssi);
                         //updatePosition();
-
                         map.invalidate();
                     }
                 }
@@ -177,7 +192,7 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View view) {
                 if (!adapter.isEmpty()) {
                     beaconListView.setVisibility(View.VISIBLE);
-                }else{
+                } else {
                     Snackbar.make(view, "There are no new configurable beacons nearby.", Snackbar.LENGTH_LONG)
                             .setAction("Action", null).show();
                 }
@@ -196,7 +211,7 @@ public class MainActivity extends AppCompatActivity {
                 //Since the ArrayList in the Adapter is constantly changing,
                 //we can't trust that it will contain the item at index.
                 //We only need the MAC address, so we can pull the string from the TextViews of the ArrayList
-                String mac = ((AppCompatTextView)beaconListView.getChildAt(index)).getText().toString();
+                String mac = ((AppCompatTextView) beaconListView.getChildAt(index)).getText().toString();
                 db.execSQL("INSERT INTO beacons (mac, x, y) VALUES ('" + mac + "'," + pos.x + "," + pos.y + ")");
 
                 //Try to move the beacon from newBeacons to beacons, if it still exists
@@ -217,26 +232,67 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    private class updateBeaconsArgs{
+    /**
+     * ATTENTION: This was auto-generated to implement the App Indexing API.
+     * See https://g.co/AppIndexing/AndroidStudio for more information.
+     */
+    public Action getIndexApiAction() {
+        Thing object = new Thing.Builder()
+                .setName("Main Page") // TODO: Define a title for the content shown.
+                // TODO: Make sure this auto-generated URL is correct.
+                .setUrl(Uri.parse("http://[ENTER-YOUR-URL-HERE]"))
+                .build();
+        return new Action.Builder(Action.TYPE_VIEW)
+                .setObject(object)
+                .setActionStatus(Action.STATUS_TYPE_COMPLETED)
+                .build();
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+
+        // ATTENTION: This was auto-generated to implement the App Indexing API.
+        // See https://g.co/AppIndexing/AndroidStudio for more information.
+        client.connect();
+        AppIndex.AppIndexApi.start(client, getIndexApiAction());
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+
+        // ATTENTION: This was auto-generated to implement the App Indexing API.
+        // See https://g.co/AppIndexing/AndroidStudio for more information.
+        AppIndex.AppIndexApi.end(client, getIndexApiAction());
+        client.disconnect();
+    }
+
+    private class updateBeaconsArgs {
         public String mac;
         public int rssi;
-        public updateBeaconsArgs(String Mac, int Rssi){
+
+        public updateBeaconsArgs(String Mac, int Rssi) {
             mac = Mac;
             rssi = Rssi;
         }
     }
 
-    private class updatePositionTask extends AsyncTask<updateBeaconsArgs,Void,Void> {
-        /** The system calls this to perform work in a worker thread and
-         * delivers it the parameters given to AsyncTask.execute() */
+    private class updatePositionTask extends AsyncTask<updateBeaconsArgs, Void, Void> {
+        /**
+         * The system calls this to perform work in a worker thread and
+         * delivers it the parameters given to AsyncTask.execute()
+         */
 
-        protected Void doInBackground(updateBeaconsArgs ... args) {
+        protected Void doInBackground(updateBeaconsArgs... args) {
             updateBeacons(args[0].mac, args[0].rssi);
             return null;
         }
 
-        /** The system calls this to perform work in the UI thread and delivers
-         * the result from doInBackground() */
+        /**
+         * The system calls this to perform work in the UI thread and delivers
+         * the result from doInBackground()
+         */
         protected void onPostExecute() {
             updatePosition();
         }
@@ -319,25 +375,34 @@ public class MainActivity extends AppCompatActivity {
 
     void updatePosition() {
         //https://github.com/lemmingapex/Trilateration
-        if(beacons.size() >= 2) {
+        if (beacons.size() >= 2) {
             double[][] positions = new double[beacons.size()][2];
             double[] distances = new double[beacons.size()];
-
             Log.v("Lilium", Integer.toString(beacons.size()));
+            int minRssi = 0;
+            int maxRssi = -999;
+            for (int i = 0; i < beacons.size(); i++){
+                if (minRssi > -61 - beacons.get(i).cummulativeRssi / beacons.get(i).numRssi)
+                    minRssi = -61 - beacons.get(i).cummulativeRssi / beacons.get(i).numRssi;
+            }
+            minRssiTextView.setText(String.valueOf(minRssi));
             for (int i = 0; i < beacons.size(); i++) {
                 positions[i][0] = beacons.get(i).x;
                 positions[i][1] = beacons.get(i).y;
                 //we want linear distances, the distance readings don't have to be accurate
                 //they just need to be consistent across all beacons
                 //because the trilateration function uses them as relative to each other
-                distances[i] = Math.pow(10.0, (-61 - (beacons.get(i).cummulativeRssi / beacons.get(i).numRssi)) / (10.0 * 3.5));
+                distances[i] = 1 / Math.sqrt(Math.pow(10.0, (-61 - (beacons.get(i).cummulativeRssi / beacons.get(i).numRssi) + minRssi) / (10.0)));
             }
-
-            NonLinearLeastSquaresSolver solver = new NonLinearLeastSquaresSolver(new TrilaterationFunction(positions, distances), new LevenbergMarquardtOptimizer());
-            LeastSquaresOptimizer.Optimum optimum = solver.solve();
-
-            double[] calculatedPosition = optimum.getPoint().toArray();
-            position = new PointF((float)calculatedPosition[0], (float)calculatedPosition[1]);
+            try {
+                NonLinearLeastSquaresSolver solver = new NonLinearLeastSquaresSolver(new TrilaterationFunction(positions, distances), new LevenbergMarquardtOptimizer());
+                LeastSquaresOptimizer.Optimum optimum = solver.solve();
+                double[] calculatedPosition = optimum.getPoint().toArray();
+                position = new PointF((float) calculatedPosition[0], (float) calculatedPosition[1]);
+            } catch (TooManyEvaluationsException e) {
+                // position stays the same
+                Log.e("ERROR","TOO MANY CALCULATIONS");
+            }
         }
     }
 }

@@ -22,6 +22,7 @@ import android.os.Environment;
 import android.os.SystemClock;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.AppCompatTextView;
@@ -86,22 +87,24 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         AddingBeacon = new AtomicBoolean();
         AddingBeacon.set(false);
-        checkPermissions();
+        if (checkPermissions() && checkBluetooth())  {
+            setup();
+        }
     }
 
-    void checkPermissions() {
+    boolean checkPermissions() {
         //android 6.0 requires runtime user permission (api level 23 required...)
         if (Build.VERSION.SDK_INT >= 23) {
             if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
                     && checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED
                     && checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
-                checkBluetooth();
+                return true;
             } else {
                 requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1);
+                return false;
             }
-        } else {
-            checkBluetooth();
         }
+        return true;
     }
 
     @Override
@@ -109,7 +112,7 @@ public class MainActivity extends AppCompatActivity {
         checkPermissions();
     }
 
-    void checkBluetooth() {
+    boolean checkBluetooth() {
         //get and enable BT adapter
         btManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
         btAdapter = btManager.getAdapter();
@@ -117,14 +120,19 @@ public class MainActivity extends AppCompatActivity {
             Intent enableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
             startActivityForResult(enableIntent, 1);
         } else {
-            setup();
+            return true;
         }
+        return false;
     }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode == 1) {
             checkBluetooth();
+        }
+        else {
+            new AlertDialog.Builder(MainActivity.this).setMessage("Bluetooth Permissions needed to operate successfully").create();
+            System.exit(0);
         }
     }
 

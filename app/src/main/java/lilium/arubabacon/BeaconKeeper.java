@@ -33,12 +33,6 @@ public class BeaconKeeper {
 
     public void stop() {
         stop.set(true);
-        /*try {
-            beaconWatchdog.join();
-        } catch (Exception e) {
-            Log.e("lilium", e.getMessage());
-            e.printStackTrace();
-        }*/
     }
 
     public void start() {
@@ -124,26 +118,23 @@ public class BeaconKeeper {
                     beacon = placedBeacons.get(b);
                     found = true;
                 }
+                else {
+                    placedBeacons.add(beacon);
+                }
             }
             if (found) {
                 long now = System.currentTimeMillis();
                 beacon.advertInterval = now - beacon.lastUpdate;
                 beacon.lastUpdate = now;
-
-                //lower in this sense means closer to 0 from the negative side
-                beacon.lowRssi = Math.max(rssi, beacon.lowRssi);
-    
-                //lower in this sense means further from 0 from the negative side
-                beacon.highRssi = Math.min(rssi, beacon.highRssi);
-
+                beacon.lowRssi = Math.max(rssi, beacon.lowRssi);//lower in this sense means closer to 0 from the negative side
+                beacon.highRssi = Math.min(rssi, beacon.highRssi);//lower in this sense means further from 0 from the negative side
                 beacon.cummulativeRssi = beacon.cummulativeRssi + rssi;
                 beacon.numRssi = beacon.numRssi + 1;
                 synchronized (placedBeacons) {
-                    placedBeacons.set(b, beacon);
-                }
-            } else {
-                synchronized (placedBeacons) {
-                    placedBeacons.add(beacon);
+                    if (placedBeacons.contains(beacon)){
+                        b = placedBeacons.indexOf(beacon);
+                        placedBeacons.set(b, beacon);
+                    }
                 }
             }
         } else {
@@ -154,27 +145,23 @@ public class BeaconKeeper {
                     beacon = unplacedBeacons.get(b);
                     found = true;
                 }
+                else{
+                    unplacedBeacons.add(beacon);
+                }
             }
             if (found) {
                 long now = System.currentTimeMillis();
                 beacon.advertInterval = now - beacon.lastUpdate;
                 beacon.lastUpdate = now;
-
-                //lower in this sense means closer to 0 from the negative side
-                beacon.lowRssi = Math.max(rssi, beacon.lowRssi);
-
-                //lower in this sense means further from 0 from the negative side
-                beacon.highRssi = Math.min(rssi, beacon.highRssi);
-
+                beacon.lowRssi = Math.max(rssi, beacon.lowRssi);//lower in this sense means closer to 0 from the negative side
+                beacon.highRssi = Math.min(rssi, beacon.highRssi);//lower in this sense means further from 0 from the negative side
                 beacon.cummulativeRssi = beacon.cummulativeRssi + rssi;
                 beacon.numRssi = beacon.numRssi + 1;
                 synchronized (unplacedBeacons) {
-                    unplacedBeacons.set(b, beacon);
-                }
-            } else {
-                synchronized (unplacedBeacons) {
-                    unplacedBeacons.add(beacon);
-                    Log.e("cabub", "adding to unplaced: ".concat(beacon.mac));
+                    if(unplacedBeacons.contains(beacon)) {
+                        b = unplacedBeacons.indexOf(beacon);
+                        unplacedBeacons.set(b, beacon);
+                    }
                 }
             }
         }
@@ -183,7 +170,6 @@ public class BeaconKeeper {
     public class BeaconUpdateArgs {
         int rssi;
         String mac;
-
         public BeaconUpdateArgs(String Mac, int Rssi) {
             mac = Mac;
             rssi = Rssi;
@@ -199,7 +185,6 @@ public class BeaconKeeper {
 
         protected void onPostExecute(Void result) {
             adapter.notifyDataSetChanged();
-            //Log.e("cabub","notifying adaper count ".concat(String.valueOf(adapter.getCount())));
         }
     }
 }

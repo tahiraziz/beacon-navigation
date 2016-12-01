@@ -42,6 +42,12 @@ public class PositionUpdater {
                     if (running.compareAndSet(0,1)) {
                         if (System.currentTimeMillis() - lastUpdate > Maximum_Update) {
                             new PositionUpdate().execute(beaconKeeper.clonePlaced());
+                            try{
+                                Thread.sleep(maxUpdate);
+                            } catch (InterruptedException e){
+                                Log.e("cabub","Interrupted Exception");
+                                e.printStackTrace();
+                            }
                         }
                         else{
                             running.decrementAndGet();
@@ -86,7 +92,10 @@ public class PositionUpdater {
     private class PositionUpdate extends AsyncTask<Object,Void,Void> {
 
         protected Void doInBackground(Object ... args) {
-            ArrayList<iBeacon> beacons = (ArrayList<iBeacon>) args[0];
+            ArrayList<iBeacon> beacons;
+            synchronized (args[0]) {
+                 beacons = new ArrayList<iBeacon>((ArrayList<iBeacon>) args[0]);
+            }
             updatePosition(beacons);
             return null;
         }

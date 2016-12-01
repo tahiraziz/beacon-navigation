@@ -50,14 +50,6 @@ public class BluetoothMonitor {
                 public void onScanResult(int callbackType, final ScanResult result) {
                     //filter out anything that is not an Aruba
                     if (is_iBeacon(result.getScanRecord().getBytes())) {
-                       /* new Thread(new Runnable() {
-                            @Override
-                            public void run() {
-                                //The code here is executed on on new thread everytime
-                                beaconKeeper.updateBeacon(result.getDevice().getAddress().replace(":", ""),result.getRssi());
-                                //Log.e("LeScanCallback", Thread.currentThread().getName());//Prints Thread-xxx
-                            }
-                        }).start();*/
                         beaconKeeper.async_updateBeacon(result.getDevice().getAddress().replace(":", ""),result.getRssi());
                     }
 
@@ -74,14 +66,6 @@ public class BluetoothMonitor {
                     //filter out anything that is not an Aruba
                     if (is_iBeacon(scanRecord)) {
                         //update beacons
-                        /*new Thread(new Runnable() {
-                            @Override
-                            public void run() {
-                                //The code here is executed on on new thread everytime
-                                beaconKeeper.updateBeacon(device.getAddress().replace(":", ""),rssi);
-                                //Log.e("LeScanCallback", Thread.currentThread().getName());//Prints Thread-xxxx
-                            }
-                        }).start();*/
                         beaconKeeper.async_updateBeacon(device.getAddress().replace(":", ""),rssi);
                     }
                 }

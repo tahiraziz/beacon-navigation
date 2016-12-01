@@ -1,6 +1,7 @@
 package lilium.arubabacon;
 
 import android.annotation.TargetApi;
+import android.app.PendingIntent;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
@@ -14,6 +15,8 @@ import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.SystemClock;
+import android.support.annotation.UiThread;
+import android.util.Log;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -39,7 +42,6 @@ public class BluetoothMonitor {
 
 
     public BluetoothMonitor(){
-        //scanThread = new Thread(new AsyncScanner(),"BLEScanner");
         beacon_filter = new byte[]{0x02, 0x01, 0x06, 0x1a, (byte) 0xff, 0x4c, 0x00, 0x02, 0x15};
         if (Build.VERSION.SDK_INT >= 21) {
             scanCallback = new ScanCallback() {
@@ -48,8 +50,17 @@ public class BluetoothMonitor {
                 public void onScanResult(int callbackType, final ScanResult result) {
                     //filter out anything that is not an Aruba
                     if (is_iBeacon(result.getScanRecord().getBytes())) {
-                        beaconKeeper.updateBeacons(result.getDevice().getAddress().replace(":", ""),result.getRssi());
+                       /* new Thread(new Runnable() {
+                            @Override
+                            public void run() {
+                                //The code here is executed on on new thread everytime
+                                beaconKeeper.updateBeacon(result.getDevice().getAddress().replace(":", ""),result.getRssi());
+                                //Log.e("LeScanCallback", Thread.currentThread().getName());//Prints Thread-xxx
+                            }
+                        }).start();*/
+                        beaconKeeper.async_updateBeacon(result.getDevice().getAddress().replace(":", ""),result.getRssi());
                     }
+
                 }
             };
             settings = new ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY).build();
@@ -63,7 +74,15 @@ public class BluetoothMonitor {
                     //filter out anything that is not an Aruba
                     if (is_iBeacon(scanRecord)) {
                         //update beacons
-                        beaconKeeper.updateBeacons(device.getAddress().replace(":", ""),rssi);
+                        /*new Thread(new Runnable() {
+                            @Override
+                            public void run() {
+                                //The code here is executed on on new thread everytime
+                                beaconKeeper.updateBeacon(device.getAddress().replace(":", ""),rssi);
+                                //Log.e("LeScanCallback", Thread.currentThread().getName());//Prints Thread-xxxx
+                            }
+                        }).start();*/
+                        beaconKeeper.async_updateBeacon(device.getAddress().replace(":", ""),rssi);
                     }
                 }
             };
@@ -74,10 +93,10 @@ public class BluetoothMonitor {
     private boolean is_iBeacon(byte[] scanRecord){
         byte[] prefix = new byte[9];
         System.arraycopy(scanRecord, 0, prefix, 0, 9);
-        //if (Arrays.equals(prefix, new byte[]{0x02, 0x01, 0x06, 0x1a, (byte) 0xff, 0x4c, 0x00, 0x02, 0x15})) {
+        if (Arrays.equals(prefix, beacon_filter))  {
             return true;
-        //}
-        //return false;
+        }
+        return false;
     }
 
     public void start(){

@@ -62,7 +62,7 @@ public class MainActivity extends AppCompatActivity {
     ImageView newBeaconMarker;
     ListView beaconListView;
     long lastUpdate;
-    private final long MAXIMUM_QUIET = 1242;
+    private final long MAXIMUM_QUIET = 5000;
     private final long MINUMUM_POSITION_DELAY = 500;
     static BluetoothManager btManager;
     static BluetoothAdapter btAdapter;
@@ -71,7 +71,7 @@ public class MainActivity extends AppCompatActivity {
     //SQLiteDatabase db = null;
     //static ArrayList<iBeacon> beacons = new ArrayList<>();
     //ArrayList<iBeacon> newBeacons = new ArrayList<>();
-    ArrayAdapter<iBeacon> adapter;
+    static ArrayAdapter<iBeacon> adapter;
     static DataHandler dataHandler;
     static BeaconKeeper beaconKeeper;
     static BluetoothMonitor bluetoothMonitor;
@@ -191,6 +191,7 @@ public class MainActivity extends AppCompatActivity {
                 adapter.notifyDataSetChanged();
                 beaconListView.setVisibility(View.INVISIBLE);
                 map.invalidate();
+
                 beaconKeeper.start();
             }
         });

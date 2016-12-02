@@ -91,9 +91,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-
     void setup() {
-        notLoaded = false;
         //init database
         dataHandler = new DataHandler();
         dataHandler.open(Environment.getExternalStorageDirectory().getAbsolutePath() + "/beacons.db");
@@ -118,23 +116,6 @@ public class MainActivity extends AppCompatActivity {
         bluetoothMonitor.start();
 
         newBeaconMarker = (ImageView) findViewById(R.id.newBeaconMarker);
-
-        FloatingActionButton placeBeacon = (FloatingActionButton) findViewById(R.id.placeBeacon);
-        placeBeacon.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                if(beaconListView.getVisibility() == View.INVISIBLE) {
-                    if (!adapter.isEmpty()) {
-                        beaconListView.setVisibility(View.VISIBLE);
-                    } else {
-                        Snackbar.make(view, "There are no new configurable beacons nearby.", Snackbar.LENGTH_LONG)
-                                .setAction("Action", null).show();
-                    }
-                } else {
-                    beaconListView.setVisibility(View.INVISIBLE);
-                }
-            }
-        });
 
         //new beacon list
         beaconListView = (ListView) findViewById(R.id.beaconListView);
@@ -163,7 +144,26 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        beaconListView.setVisibility(View.INVISIBLE);
+        FloatingActionButton placeBeacon = (FloatingActionButton) findViewById(R.id.placeBeacon);
+        placeBeacon.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if(beaconListView.getVisibility() == View.INVISIBLE) {
+                    if (!adapter.isEmpty()) {
+                        beaconListView.setVisibility(View.VISIBLE);
+                    } else {
+                        Snackbar.make(view, "There are no new configurable beacons nearby.", Snackbar.LENGTH_LONG)
+                                .setAction("Action", null).show();
+                    }
+                } else {
+                    beaconListView.setVisibility(View.INVISIBLE);
+                }
+            }
+        });
+
         positionUpdater = new PositionUpdater(MINIMUM_POSITION_DELAY);
+        notLoaded = false;
     }
 
 

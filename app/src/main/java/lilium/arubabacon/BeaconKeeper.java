@@ -4,6 +4,9 @@ import android.os.AsyncTask;
 import android.util.Log;
 import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import static java.lang.Math.abs;
+import static java.lang.Math.pow;
 import static lilium.arubabacon.MainActivity.adapter;
 import static lilium.arubabacon.MainActivity.dataHandler;
 
@@ -22,8 +25,8 @@ class BeaconKeeper {
 
     void start() {
         stop.set(false);
-        beaconWatchdog = new Thread(new Watchdog(), "BeaconWatchdog");
-        beaconWatchdog.start();
+        //beaconWatchdog = new Thread(new Watchdog(), "BeaconWatchdog");
+        //beaconWatchdog.start();
     }
 
     ArrayList<iBeacon> clonePlaced() {
@@ -38,10 +41,24 @@ class BeaconKeeper {
         }
     }
 
-    void placeBeacon(iBeacon beacon) {
+    public void placeBeacon(iBeacon beacon) {
         if (unplacedBeacons.contains(beacon)) {
                 placedBeacons.add(beacon);//.remove relies on the iBeacon.equals, so if the iBeacon doesn't exist it shouldn't crash
                 unplacedBeacons.remove(beacon);
+        }
+    }
+
+    public void removeBeacon(iBeacon beacon){
+        synchronized (placedBeacons){
+            if (placedBeacons.contains(beacon)){
+                placedBeacons.remove(beacon);
+            }
+        }
+    }
+
+    public void wipeBeacons(){
+        synchronized (placedBeacons){
+            placedBeacons.clear();
         }
     }
 
@@ -50,6 +67,8 @@ class BeaconKeeper {
         placedBeacons = new ArrayList<>();
         unplacedBeacons = new ArrayList<>();
         destroyBeaconTime = DestroyBeaconTime;
+        beaconWatchdog = new Thread(new Watchdog(),"Watchdog");
+        beaconWatchdog.start(); //TODO Turn back on
     }
 
     private class Watchdog implements Runnable {
@@ -90,7 +109,9 @@ class BeaconKeeper {
 
 
     private void updateBeacon(String mac, int rssi) {
-        iBeacon beacon = dataHandler.selectBeacon(mac, rssi);
+        iBeacon beacon = null;
+        try {beacon = dataHandler.selectBeacon(mac, rssi);
+        }catch (Exception e){}
         int b = -1;
         boolean found = false;
         if (beacon != null) {
@@ -139,6 +160,20 @@ class BeaconKeeper {
                 }
             }
         }
+    }
+
+    public iBeacon nearestBeacon(float x, float y){
+        iBeacon beacon = null;
+        double distanceTo = Double.MAX_VALUE;
+        synchronized (placedBeacons){
+            for(iBeacon b: placedBeacons){
+                if(distanceTo > pow(b.x - x,2)+ pow(b.y - y,2)) {
+                    distanceTo = pow(b.x - x,2) + pow(b.y - y,2);
+                    beacon = b;
+                }
+            }
+        }
+        return beacon;
     }
 
     class BeaconUpdateArgs {

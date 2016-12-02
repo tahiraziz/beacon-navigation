@@ -12,7 +12,10 @@ import android.util.AttributeSet;
 //https://github.com/davemorrissey/subsampling-scale-image-view
 import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView;
 import java.util.ArrayList;
+
+import static java.lang.Math.abs;
 import static lilium.arubabacon.MainActivity.beaconKeeper;
+import static lilium.arubabacon.MainActivity.map;
 
 public class DrawableImageView extends SubsamplingScaleImageView {
     Bitmap b = BitmapFactory.decodeResource(getResources(), R.mipmap.beacon);
@@ -34,17 +37,20 @@ public class DrawableImageView extends SubsamplingScaleImageView {
                 Matrix matrix = new Matrix();
                 matrix.postTranslate(offset.x - b.getWidth() / 2, offset.y - b.getHeight() / 2);
                 canvas.drawBitmap(b, matrix, p);
-                canvas.drawText(String.valueOf(beacons.get(i).averageRssi()),
+                /*canvas.drawText(String.valueOf(beacons.get(i).averageRssi()),
                         offset.x - b.getWidth() / 8,offset.y - b.getHeight() / 4, p);
-                canvas.drawText(String.valueOf(beacons.get(i).distance()),offset.x - b.getWidth() / 8,offset.y + b.getHeight() / 4, p);
+                canvas.drawText(String.format("%.2f",beacons.get(i).distance()),offset.x - b.getWidth() / 8,offset.y + b.getHeight() / 4, p);*/
             }
         }
 
+
+
         PointF offset = sourceToViewCoord(MainActivity.position.x, MainActivity.position.y);
-        if (offset != null) {
+        if (offset != null && beacons.size() > 1) {
             Matrix matrix = new Matrix();
             matrix.postTranslate(offset.x - marker.getWidth() / 2, offset.y - marker.getHeight() / 2);
             canvas.drawBitmap(marker, matrix, p);
         }
+
     }
 }

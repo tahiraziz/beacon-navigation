@@ -2,6 +2,11 @@ package lilium.arubabacon;
 
 import android.widget.TextView;
 
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.PriorityQueue;
+import java.util.Queue;
+
 class iBeacon{
     //everything is public because of AMERICAN FREEDOM
     String mac;
@@ -9,26 +14,30 @@ class iBeacon{
     float y;
 
     long lastUpdate;
-    long advertInterval;
+    //long advertInterval;
 
     int rssi;
-    int lowRssi;
-    int cummulativeRssi;
-    int numRssi;
-    int highRssi;
+    private Queue<Integer> rssiQueue;
+    private final static int QUEUE_MAX_LENGTH = 15;
+
     TextView text;
 
     iBeacon(String mac, int rssi, float x, float y){
+        rssiQueue = new LinkedList<>();
         this.mac = mac;
         lastUpdate = System.currentTimeMillis();
+        rssiQueue.add(rssi);
         this.rssi = rssi;
-        lowRssi = rssi;
-        highRssi = rssi;
-        cummulativeRssi = rssi;
-        numRssi = 1;
         this.x = x;
         this.y = y;
     }
+/*
+    public synchronized void set_queue_length(int arg){
+        QUEUE_MAX_LENGTH = arg;
+        while(rssiQueue.size() >= QUEUE_MAX_LENGTH){
+            rssiQueue.remove();
+        }
+    }*/
 
     @Override
     public boolean equals(Object obj) {
@@ -42,6 +51,23 @@ class iBeacon{
     }
 
     public double distance(){
-        return 10 / Math.pow(10.0, (-61 - (cummulativeRssi / numRssi)) / (10.0));
+        double linearDist = 10 / Math.pow(10.0, (-61 - Math.min(averageRssi(), -55)) / (10.0));;
+        return linearDist;
+    }
+
+    public synchronized void addRssi(Integer Rssi){
+        if (rssiQueue.size() >= QUEUE_MAX_LENGTH ){
+            rssiQueue.remove();
+        }
+        rssiQueue.add(Rssi);
+    }
+
+    public synchronized double  averageRssi(){
+        Integer sum = 0;
+        Double avg;
+        for(Integer i: rssiQueue){
+            sum += i;
+        }
+        return sum / rssiQueue.size();
     }
 }

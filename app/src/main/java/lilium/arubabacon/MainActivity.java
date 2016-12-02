@@ -31,6 +31,7 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -63,11 +64,14 @@ public class MainActivity extends AppCompatActivity {
     ImageView newBeaconMarker;
     ListView beaconListView;
     long lastUpdate;
-    private final long MAXIMUM_QUIET = 5000;
-    private final long MINUMUM_POSITION_DELAY = 500;
+    private final long MAXIMUM_QUIET = 1300;
+    private final long MINUMUM_POSITION_DELAY = 200;
     static BluetoothManager btManager;
     static BluetoothAdapter btAdapter;
     AtomicBoolean AddingBeacon;
+
+    //int beacon_queue_len = 8;
+    //static Integer flter_level = -80;
 
     //SQLiteDatabase db = null;
     //static ArrayList<iBeacon> beacons = new ArrayList<>();
@@ -184,7 +188,7 @@ public class MainActivity extends AppCompatActivity {
         beaconListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int index, long id) {
-                beaconKeeper.stop();
+                beaconKeeper.stop(); // watchdog
                 PointF pos = map.viewToSourceCoord(newBeaconMarker.getX() + newBeaconMarker.getWidth() / 2, newBeaconMarker.getY() + newBeaconMarker.getHeight() / 2);
                 //Since the ArrayList in the Adapter is constantly changing,
                 //we can't trust that it will contain the item at index.
@@ -200,11 +204,51 @@ public class MainActivity extends AppCompatActivity {
                 beaconListView.setVisibility(View.INVISIBLE);
                 map.invalidate();
 
-                beaconKeeper.start();
+                beaconKeeper.start(); // watchdog
             }
         });
 
         positionUpdater = new PositionUpdater(MINUMUM_POSITION_DELAY);
+/*
+        Button b =  (Button)findViewById(R.id.add_buff_button);
+        b.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                if (beacon_queue_len > 1)
+                    beaconKeeper.set_queue_len(++beacon_queue_len);
+                TextView t  = (TextView)findViewById(R.id.buffer_length_text);
+                t.setText(String.valueOf(beacon_queue_len));
+            }
+        });
+        b =  (Button)findViewById(R.id.sub_buff_button);
+        b.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                if (beacon_queue_len > 1)
+                    beaconKeeper.set_queue_len(--beacon_queue_len);
+                TextView t  = (TextView)findViewById(R.id.buffer_length_text);
+                t.setText(String.valueOf(beacon_queue_len));
+            }
+        });
+
+        b =  (Button)findViewById(R.id.add_filter_button);
+        b.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                if (flter_level < 1)
+                    flter_level++;
+                TextView t  = (TextView)findViewById(R.id.filter_value_text);
+                t.setText(String.valueOf(flter_level));
+            }
+        });
+
+
+        b =  (Button)findViewById(R.id.sub_filter_button);
+        b.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                if (flter_level < 1)
+                    flter_level--;
+                TextView t  = (TextView)findViewById(R.id.filter_value_text);
+                t.setText(String.valueOf(flter_level));
+            }
+        });*/
     }
 
 

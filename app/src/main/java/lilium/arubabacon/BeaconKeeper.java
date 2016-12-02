@@ -123,13 +123,15 @@ public class BeaconKeeper {
                 }
             }
             if (found) {
-                long now = System.currentTimeMillis();
-                beacon.advertInterval = now - beacon.lastUpdate;
-                beacon.lastUpdate = now;
-                beacon.lowRssi = Math.max(rssi, beacon.lowRssi);//lower in this sense means closer to 0 from the negative side
-                beacon.highRssi = Math.min(rssi, beacon.highRssi);//lower in this sense means further from 0 from the negative side
-                beacon.cummulativeRssi = beacon.cummulativeRssi + rssi;
-                beacon.numRssi = beacon.numRssi + 1;
+                //long now = System.currentTimeMillis();
+                beacon.rssi = rssi;
+                //beacon.advertInterval = now - beacon.lastUpdate;
+                //beacon.lastUpdate = now;
+                //beacon.lowRssi = Math.max(rssi, beacon.lowRssi);//lower in this sense means closer to 0 from the negative side
+                //beacon.highRssi = Math.min(rssi, beacon.highRssi);//lower in this sense means further from 0 from the negative side
+                //beacon.cummulativeRssi = beacon.cummulativeRssi + rssi;
+                //beacon.numRssi = beacon.numRssi + 1;
+                beacon.addRssi(rssi);
                 synchronized (placedBeacons) {
                     if (placedBeacons.contains(beacon)){
                         b = placedBeacons.indexOf(beacon);
@@ -150,13 +152,15 @@ public class BeaconKeeper {
                 }
             }
             if (found) {
-                long now = System.currentTimeMillis();
-                beacon.advertInterval = now - beacon.lastUpdate;
-                beacon.lastUpdate = now;
-                beacon.lowRssi = Math.max(rssi, beacon.lowRssi);//lower in this sense means closer to 0 from the negative side
-                beacon.highRssi = Math.min(rssi, beacon.highRssi);//lower in this sense means further from 0 from the negative side
-                beacon.cummulativeRssi = beacon.cummulativeRssi + rssi;
-                beacon.numRssi = beacon.numRssi + 1;
+                //long now = System.currentTimeMillis();
+                //beacon.advertInterval = now - beacon.lastUpdate;
+                beacon.rssi = rssi;
+                //beacon.lastUpdate = now;
+                //beacon.lowRssi = Math.max(rssi, beacon.lowRssi);//lower in this sense means closer to 0 from the negative side
+                //beacon.highRssi = Math.min(rssi, beacon.highRssi);//lower in this sense means further from 0 from the negative side
+                //beacon.cummulativeRssi = beacon.cummulativeRssi + rssi;
+                //beacon.numRssi = beacon.numRssi + 1;
+                beacon.addRssi(rssi);
                 synchronized (unplacedBeacons) {
                     if(unplacedBeacons.contains(beacon)) {
                         b = unplacedBeacons.indexOf(beacon);
@@ -166,6 +170,14 @@ public class BeaconKeeper {
             }
         }
     }
+/*
+    public void set_queue_len(int arg){
+        synchronized (placedBeacons) {
+            for (iBeacon beacon : placedBeacons) {
+                beacon.set_queue_length(arg);
+            }
+        }
+    }*/
 
     public class BeaconUpdateArgs {
         int rssi;

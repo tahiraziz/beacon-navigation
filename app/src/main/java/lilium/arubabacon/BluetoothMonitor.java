@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static lilium.arubabacon.MainActivity.beaconKeeper;
 import static lilium.arubabacon.MainActivity.btAdapter;
+//import static lilium.arubabacon.MainActivity.flter_level;
 
 
 /**
@@ -38,6 +39,7 @@ public class BluetoothMonitor {
     private ScanSettings settings;
     private ArrayList<ScanFilter> filters;
     private byte beacon_filter [];
+    private final static int FILTER_MIN = -84;
 
 
 
@@ -49,10 +51,9 @@ public class BluetoothMonitor {
                 @TargetApi(21)
                 public void onScanResult(int callbackType, final ScanResult result) {
                     //filter out anything that is not an Aruba
-                    if (is_iBeacon(result.getScanRecord().getBytes())) {
+                    if (is_iBeacon(result.getScanRecord().getBytes()) && result.getRssi() > FILTER_MIN) {
                         beaconKeeper.async_updateBeacon(result.getDevice().getAddress().replace(":", ""),result.getRssi());
                     }
-
                 }
             };
             settings = new ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY).build();
@@ -64,7 +65,7 @@ public class BluetoothMonitor {
                 @Override
                 public void onLeScan(final BluetoothDevice device, final int rssi, final byte[] scanRecord) {
                     //filter out anything that is not an Aruba
-                    if (is_iBeacon(scanRecord)) {
+                    if (is_iBeacon(scanRecord) && rssi > FILTER_MIN) {
                         //update beacons
                         beaconKeeper.async_updateBeacon(device.getAddress().replace(":", ""),rssi);
                     }

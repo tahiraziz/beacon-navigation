@@ -36,10 +36,9 @@ public class DrawableImageView extends SubsamplingScaleImageView {
                 Matrix matrix = new Matrix();
                 matrix.postTranslate(offset.x - b.getWidth() / 2, offset.y - b.getHeight() / 2);
                 canvas.drawBitmap(b, matrix, p);
-                //canvas.drawText(String.valueOf(beaconKeeper.placedBeacons.get(i).cummulativeRssi / beaconKeeper.placedBeacons.get(i).numRssi),
-                //        offset.x - b.getWidth() / 8,offset.y - b.getHeight() / 4, p);
-                //canvas.drawText(String.valueOf(Math.sqrt(Math.pow(10.0, (-61 - (beaconKeeper.placedBeacons.get(i).cummulativeRssi /
-                //        beaconKeeper.placedBeacons.get(i).numRssi)) / (10.0)))),offset.x - b.getWidth() / 8,offset.y + b.getHeight() / 4, p);
+                canvas.drawText(String.valueOf(beacons.get(i).averageRssi()),
+                        offset.x - b.getWidth() / 8,offset.y - b.getHeight() / 4, p);
+                canvas.drawText(String.valueOf(beacons.get(i).distance()),offset.x - b.getWidth() / 8,offset.y + b.getHeight() / 4, p);
             }
         }
 

@@ -30,6 +30,8 @@ public class PositionUpdater {
     private AtomicBoolean stop;
     private AtomicInteger running;
 
+    private final long MaxSpawnWait = 100;
+
 
     public PositionUpdater(final long Maximum_Update) {
         lastUpdate = System.currentTimeMillis();
@@ -39,13 +41,13 @@ public class PositionUpdater {
         positionUpdate = new Thread(new Runnable(){
             public void run(){
                 while(! stop.get()) {
-                    if (running.compareAndSet(0,1)) {
+                    if (running.compareAndSet(0,1)) { // is a async position updater running?
                         if (System.currentTimeMillis() - lastUpdate > Maximum_Update) {
                             new PositionUpdate().execute(beaconKeeper.clonePlaced());
-                            try{
-                                Thread.sleep(maxUpdate);
+                           try{
+                                Thread.sleep(MaxSpawnWait);
                             } catch (InterruptedException e){
-                                Log.e("cabub","Interrupted Exception");
+                                Log.e("PositionThread","Interrupted Exception");
                                 e.printStackTrace();
                             }
                         }
@@ -82,9 +84,14 @@ public class PositionUpdater {
                 double[] calculatedPosition = optimum.getPoint().toArray();
                 MainActivity.position = new PointF((float) calculatedPosition[0], (float) calculatedPosition[1]);
                 lastUpdate = System.currentTimeMillis();
+                try{
+                    Thread.sleep(maxUpdate);
+                } catch (InterruptedException e){
+                    Log.e("async_position","Interrupted Exception");
+                }
             } catch (TooManyEvaluationsException e) {
                 // position stays the same
-                Log.e("ERROR", "TOO MANY CALCULATIONS");
+                Log.e("async_position", "TOO MANY CALCULATIONS");
             }
         }
     }
@@ -93,9 +100,7 @@ public class PositionUpdater {
 
         protected Void doInBackground(Object ... args) {
             ArrayList<iBeacon> beacons;
-            synchronized (args[0]) {
-                 beacons = new ArrayList<iBeacon>((ArrayList<iBeacon>) args[0]);
-            }
+            beacons = (ArrayList<iBeacon>) args[0];
             updatePosition(beacons);
             return null;
         }

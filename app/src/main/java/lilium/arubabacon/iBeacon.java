@@ -1,14 +1,10 @@
 package lilium.arubabacon;
 
 import android.widget.TextView;
-
-import java.util.ArrayList;
 import java.util.LinkedList;
-import java.util.PriorityQueue;
 import java.util.Queue;
 
 class iBeacon{
-    //everything is public because of AMERICAN FREEDOM
     String mac;
     float x;
     float y;
@@ -51,8 +47,7 @@ class iBeacon{
     }
 
     public double distance(){
-        double linearDist = 10 / Math.pow(10.0, (-61 - Math.min(averageRssi(), -55)) / (10.0));;
-        return linearDist;
+        return 10 / Math.pow(10.0, (-61 - Math.min(-55, averageRssi())) / 10.0);
     }
 
     public synchronized void addRssi(Integer Rssi){

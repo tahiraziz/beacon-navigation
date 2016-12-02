@@ -172,11 +172,15 @@ public class MainActivity extends AppCompatActivity {
         placeBeacon.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if (!adapter.isEmpty()) {
-                    beaconListView.setVisibility(View.VISIBLE);
+                if(beaconListView.getVisibility() == View.INVISIBLE) {
+                    if (!adapter.isEmpty()) {
+                        beaconListView.setVisibility(View.VISIBLE);
+                    } else {
+                        Snackbar.make(view, "There are no new configurable beacons nearby.", Snackbar.LENGTH_LONG)
+                                .setAction("Action", null).show();
+                    }
                 } else {
-                    Snackbar.make(view, "There are no new configurable beacons nearby.", Snackbar.LENGTH_LONG)
-                            .setAction("Action", null).show();
+                    beaconListView.setVisibility(View.INVISIBLE);
                 }
             }
         });

@@ -1,89 +1,45 @@
 package lilium.arubabacon;
 
 import android.Manifest;
-import android.annotation.TargetApi;
 import android.bluetooth.BluetoothAdapter;
-import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
-import android.bluetooth.le.ScanCallback;
-import android.bluetooth.le.ScanFilter;
-import android.bluetooth.le.ScanResult;
-import android.bluetooth.le.ScanSettings;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.database.Cursor;
-import android.database.sqlite.SQLiteDatabase;
 import android.graphics.PointF;
-import android.net.Uri;
-import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Environment;
-import android.os.SystemClock;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
-import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.AppCompatTextView;
-import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
-import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.ListView;
-import android.widget.TextView;
-
 import com.davemorrissey.labs.subscaleview.ImageSource;
 import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView;
-import com.google.android.gms.appindexing.Action;
-import com.google.android.gms.appindexing.AppIndex;
-import com.google.android.gms.appindexing.Thing;
-import com.google.android.gms.common.api.GoogleApiClient;
-
-import java.io.Console;
-import java.sql.Time;
-import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Timer;
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import org.apache.commons.math3.analysis.function.Add;
-import org.apache.commons.math3.exception.TooManyEvaluationsException;
-import org.apache.commons.math3.fitting.leastsquares.GaussNewtonOptimizer;
-import org.apache.commons.math3.fitting.leastsquares.LeastSquaresOptimizer;
-import org.apache.commons.math3.fitting.leastsquares.LevenbergMarquardtOptimizer;
-
-import static android.support.design.R.id.time;
 
 public class MainActivity extends AppCompatActivity {
     static SubsamplingScaleImageView map;
     ImageView newBeaconMarker;
     ListView beaconListView;
-    long lastUpdate;
-    private final long MAXIMUM_QUIET = 1300;
-    private final long MINUMUM_POSITION_DELAY = 200;
+    final long MAXIMUM_QUIET = 1300;
+    final long MINIMUM_POSITION_DELAY = 200;
     static BluetoothManager btManager;
     static BluetoothAdapter btAdapter;
     AtomicBoolean AddingBeacon;
-
-    //int beacon_queue_len = 8;
-    //static Integer flter_level = -80;
-
-    //SQLiteDatabase db = null;
-    //static ArrayList<iBeacon> beacons = new ArrayList<>();
-    //ArrayList<iBeacon> newBeacons = new ArrayList<>();
     static ArrayAdapter<iBeacon> adapter;
     static DataHandler dataHandler;
     static BeaconKeeper beaconKeeper;
     static BluetoothMonitor bluetoothMonitor;
     static PositionUpdater positionUpdater;
-
-
     static PointF position = new PointF(0, 0);
+    static boolean notLoaded = true;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -91,24 +47,24 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         AddingBeacon = new AtomicBoolean();
         AddingBeacon.set(false);
-        if (checkPermissions() && checkBluetooth())  {
-            setup();
-        }
+        checkPermissions();
     }
 
-    boolean checkPermissions() {
+    void checkPermissions(){
         //android 6.0 requires runtime user permission (api level 23 required...)
         if (Build.VERSION.SDK_INT >= 23) {
             if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
                     && checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED
-                    && checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
-                return true;
-            } else {
-                requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1);
-                return false;
+                    && checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED)
+            {
+                checkBluetooth();
             }
+            else{
+                requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1);
+            }
+        } else {
+            checkBluetooth();
         }
-        return true;
     }
 
     @Override
@@ -116,7 +72,7 @@ public class MainActivity extends AppCompatActivity {
         checkPermissions();
     }
 
-    boolean checkBluetooth() {
+    void checkBluetooth(){
         //get and enable BT adapter
         btManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
         btAdapter = btManager.getAdapter();
@@ -124,9 +80,8 @@ public class MainActivity extends AppCompatActivity {
             Intent enableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
             startActivityForResult(enableIntent, 1);
         } else {
-            return true;
+            setup();
         }
-        return false;
     }
 
     @Override
@@ -134,13 +89,11 @@ public class MainActivity extends AppCompatActivity {
         if (requestCode == 1) {
             checkBluetooth();
         }
-        else {
-            new AlertDialog.Builder(MainActivity.this).setMessage("Bluetooth Permissions needed to operate successfully").create();
-            System.exit(0);
-        }
     }
 
+
     void setup() {
+        notLoaded = false;
         //init database
         dataHandler = new DataHandler();
         dataHandler.open(Environment.getExternalStorageDirectory().getAbsolutePath() + "/beacons.db");
@@ -165,8 +118,6 @@ public class MainActivity extends AppCompatActivity {
         bluetoothMonitor.start();
 
         newBeaconMarker = (ImageView) findViewById(R.id.newBeaconMarker);
-        //map imageView
-
 
         FloatingActionButton placeBeacon = (FloatingActionButton) findViewById(R.id.placeBeacon);
         placeBeacon.setOnClickListener(new View.OnClickListener() {
@@ -212,47 +163,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        positionUpdater = new PositionUpdater(MINUMUM_POSITION_DELAY);
-/*
-        Button b =  (Button)findViewById(R.id.add_buff_button);
-        b.setOnClickListener(new View.OnClickListener() {
-            public void onClick(View v) {
-                if (beacon_queue_len > 1)
-                    beaconKeeper.set_queue_len(++beacon_queue_len);
-                TextView t  = (TextView)findViewById(R.id.buffer_length_text);
-                t.setText(String.valueOf(beacon_queue_len));
-            }
-        });
-        b =  (Button)findViewById(R.id.sub_buff_button);
-        b.setOnClickListener(new View.OnClickListener() {
-            public void onClick(View v) {
-                if (beacon_queue_len > 1)
-                    beaconKeeper.set_queue_len(--beacon_queue_len);
-                TextView t  = (TextView)findViewById(R.id.buffer_length_text);
-                t.setText(String.valueOf(beacon_queue_len));
-            }
-        });
-
-        b =  (Button)findViewById(R.id.add_filter_button);
-        b.setOnClickListener(new View.OnClickListener() {
-            public void onClick(View v) {
-                if (flter_level < 1)
-                    flter_level++;
-                TextView t  = (TextView)findViewById(R.id.filter_value_text);
-                t.setText(String.valueOf(flter_level));
-            }
-        });
-
-
-        b =  (Button)findViewById(R.id.sub_filter_button);
-        b.setOnClickListener(new View.OnClickListener() {
-            public void onClick(View v) {
-                if (flter_level < 1)
-                    flter_level--;
-                TextView t  = (TextView)findViewById(R.id.filter_value_text);
-                t.setText(String.valueOf(flter_level));
-            }
-        });*/
+        positionUpdater = new PositionUpdater(MINIMUM_POSITION_DELAY);
     }
 
 

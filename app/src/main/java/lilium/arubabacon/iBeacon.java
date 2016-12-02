@@ -1,6 +1,5 @@
 package lilium.arubabacon;
 
-import android.widget.TextView;
 import java.util.LinkedList;
 import java.util.Queue;
 
@@ -10,13 +9,10 @@ class iBeacon{
     float y;
 
     long lastUpdate;
-    //long advertInterval;
 
     int rssi;
     private Queue<Integer> rssiQueue;
     private final static int QUEUE_MAX_LENGTH = 15;
-
-    TextView text;
 
     iBeacon(String mac, int rssi, float x, float y){
         rssiQueue = new LinkedList<>();
@@ -27,13 +23,6 @@ class iBeacon{
         this.x = x;
         this.y = y;
     }
-/*
-    public synchronized void set_queue_length(int arg){
-        QUEUE_MAX_LENGTH = arg;
-        while(rssiQueue.size() >= QUEUE_MAX_LENGTH){
-            rssiQueue.remove();
-        }
-    }*/
 
     @Override
     public boolean equals(Object obj) {
@@ -47,6 +36,15 @@ class iBeacon{
     }
 
     public double distance(){
+        //we want linear distances, the distance readings don't have to be accurate
+        //they just need to be consistent across all beacons
+        //because the trilateration function uses them as relative to each other
+
+        //-61 is the callibrated RSSI reported by the beacons
+        //ratio_db = calibratedRSSI - RSSI
+        //ratio_db = -61 - (beacons.get(i).cummulativeRssi / beacons.get(i).numRssi)
+        //Convert to linear Math.pow(10.0, (ratio_db) / 10.0))
+        //2 / x inverse because the results were backwards.
         return 10 / Math.pow(10.0, (-61 - Math.min(-55, averageRssi())) / 10.0);
     }
 
@@ -57,9 +55,8 @@ class iBeacon{
         rssiQueue.add(Rssi);
     }
 
-    public synchronized double  averageRssi(){
+    public synchronized double averageRssi(){
         Integer sum = 0;
-        Double avg;
         for(Integer i: rssiQueue){
             sum += i;
         }

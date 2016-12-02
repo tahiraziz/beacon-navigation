@@ -1,24 +1,15 @@
 package lilium.arubabacon;
 
 import android.database.Cursor;
-import android.database.sqlite.SQLiteCursorDriver;
 import android.database.sqlite.SQLiteDatabase;
-import android.database.sqlite.SQLiteQuery;
 import android.database.sqlite.SQLiteStatement;
-import android.os.Environment;
-
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 
-/**
- * Created by Cabub on 11/30/2016.
- */
-
-public class DataHandler {
+class DataHandler {
     SQLiteDatabase db;
-    public boolean is_open;
+    boolean is_open;
 
-    public DataHandler(){
+    DataHandler(){
         is_open=false;
 
     }

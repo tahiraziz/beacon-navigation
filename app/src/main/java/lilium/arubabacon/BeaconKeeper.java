@@ -1,71 +1,54 @@
 package lilium.arubabacon;
 
-import android.bluetooth.BluetoothAdapter;
 import android.os.AsyncTask;
 import android.util.Log;
-
-
 import java.util.ArrayList;
-import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-
 import static lilium.arubabacon.MainActivity.adapter;
 import static lilium.arubabacon.MainActivity.dataHandler;
-import static lilium.arubabacon.MainActivity.map;
 
-/**
- * Created by Cabub on 11/30/2016.
- */
-
-
-public class BeaconKeeper {
+class BeaconKeeper {
 
     private long destroyBeaconTime;
     private ArrayList<iBeacon> placedBeacons;
-    private Semaphore placedSem;
     private ArrayList<iBeacon> unplacedBeacons;
     private Thread beaconWatchdog;
-    private Thread beaconUpdator;
-    private AtomicInteger asyncCount;
     private AtomicBoolean stop;
 
 
-    public void stop() {
+    void stop() {
         stop.set(true);
     }
 
-    public void start() {
-        stop.set(false);/*
+    void start() {
+        stop.set(false);
         beaconWatchdog = new Thread(new Watchdog(), "BeaconWatchdog");
-        beaconWatchdog.start();*/
+        beaconWatchdog.start();
     }
 
-    public ArrayList<iBeacon> clonePlaced() {
+    ArrayList<iBeacon> clonePlaced() {
         synchronized (placedBeacons) {
-            return new ArrayList<iBeacon>(placedBeacons);
+            return new ArrayList<>(placedBeacons);
         }
     }
 
-    public ArrayList<iBeacon> cloneUnplaced() {
+    ArrayList<iBeacon> cloneUnplaced() {
         synchronized (placedBeacons) {
             return unplacedBeacons;
         }
     }
 
-    public void placeBeacon(iBeacon beacon) {
+    void placeBeacon(iBeacon beacon) {
         if (unplacedBeacons.contains(beacon)) {
                 placedBeacons.add(beacon);//.remove relies on the iBeacon.equals, so if the iBeacon doesn't exist it shouldn't crash
                 unplacedBeacons.remove(beacon);
         }
     }
 
-    public BeaconKeeper(long DestroyBeaconTime) {
-        //asyncCount = new AtomicInteger(0);
-
+    BeaconKeeper(long DestroyBeaconTime) {
         stop = new AtomicBoolean();
-        placedBeacons = new ArrayList<iBeacon>();
-        unplacedBeacons = new ArrayList<iBeacon>();
+        placedBeacons = new ArrayList<>();
+        unplacedBeacons = new ArrayList<>();
         destroyBeaconTime = DestroyBeaconTime;
     }
 
@@ -85,7 +68,6 @@ public class BeaconKeeper {
                     synchronized (unplacedBeacons) {
                         for (int i = 0; i < unplacedBeacons.size(); i++) {
                             if (System.currentTimeMillis() - unplacedBeacons.get(i).lastUpdate > destroyBeaconTime) {
-                                //Log.e("cabub","removing from unplaced ".concat(unplacedBeacons.get(i).mac));
                                 unplacedBeacons.remove(i);
                                 i--;
                             }
@@ -102,12 +84,12 @@ public class BeaconKeeper {
         }
     }
 
-    public void async_updateBeacon(String mac, int rssi) {
+    void async_updateBeacon(String mac, int rssi) {
         new BeaconUpdate().execute(new BeaconUpdateArgs(mac, rssi));
     }
 
 
-    public void updateBeacon(String mac, int rssi) {
+    private void updateBeacon(String mac, int rssi) {
         iBeacon beacon = dataHandler.selectBeacon(mac, rssi);
         int b = -1;
         boolean found = false;
@@ -123,14 +105,8 @@ public class BeaconKeeper {
                 }
             }
             if (found) {
-                //long now = System.currentTimeMillis();
                 beacon.rssi = rssi;
-                //beacon.advertInterval = now - beacon.lastUpdate;
-                //beacon.lastUpdate = now;
-                //beacon.lowRssi = Math.max(rssi, beacon.lowRssi);//lower in this sense means closer to 0 from the negative side
-                //beacon.highRssi = Math.min(rssi, beacon.highRssi);//lower in this sense means further from 0 from the negative side
-                //beacon.cummulativeRssi = beacon.cummulativeRssi + rssi;
-                //beacon.numRssi = beacon.numRssi + 1;
+                beacon.lastUpdate = System.currentTimeMillis();
                 beacon.addRssi(rssi);
                 synchronized (placedBeacons) {
                     if (placedBeacons.contains(beacon)){
@@ -152,14 +128,8 @@ public class BeaconKeeper {
                 }
             }
             if (found) {
-                //long now = System.currentTimeMillis();
-                //beacon.advertInterval = now - beacon.lastUpdate;
                 beacon.rssi = rssi;
-                //beacon.lastUpdate = now;
-                //beacon.lowRssi = Math.max(rssi, beacon.lowRssi);//lower in this sense means closer to 0 from the negative side
-                //beacon.highRssi = Math.min(rssi, beacon.highRssi);//lower in this sense means further from 0 from the negative side
-                //beacon.cummulativeRssi = beacon.cummulativeRssi + rssi;
-                //beacon.numRssi = beacon.numRssi + 1;
+                beacon.lastUpdate = System.currentTimeMillis();
                 beacon.addRssi(rssi);
                 synchronized (unplacedBeacons) {
                     if(unplacedBeacons.contains(beacon)) {
@@ -170,25 +140,17 @@ public class BeaconKeeper {
             }
         }
     }
-/*
-    public void set_queue_len(int arg){
-        synchronized (placedBeacons) {
-            for (iBeacon beacon : placedBeacons) {
-                beacon.set_queue_length(arg);
-            }
-        }
-    }*/
 
-    public class BeaconUpdateArgs {
+    class BeaconUpdateArgs {
         int rssi;
         String mac;
-        public BeaconUpdateArgs(String Mac, int Rssi) {
+        BeaconUpdateArgs(String Mac, int Rssi) {
             mac = Mac;
             rssi = Rssi;
         }
     }
 
-    public class BeaconUpdate extends AsyncTask<BeaconUpdateArgs, Void, Void> {
+    class BeaconUpdate extends AsyncTask<BeaconUpdateArgs, Void, Void> {
 
         protected Void doInBackground(BeaconUpdateArgs... args) {
             updateBeacon(args[0].mac, args[0].rssi);

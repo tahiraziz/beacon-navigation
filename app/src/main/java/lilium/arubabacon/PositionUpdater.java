@@ -3,29 +3,18 @@ package lilium.arubabacon;
 import android.graphics.PointF;
 import android.os.AsyncTask;
 import android.util.Log;
-
 import org.apache.commons.math3.exception.TooManyEvaluationsException;
 import org.apache.commons.math3.fitting.leastsquares.LeastSquaresOptimizer;
 import org.apache.commons.math3.fitting.leastsquares.LevenbergMarquardtOptimizer;
-import org.apache.commons.math3.optim.nonlinear.scalar.ObjectiveFunction;
-
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import static lilium.arubabacon.MainActivity.adapter;
 import static lilium.arubabacon.MainActivity.beaconKeeper;
 import static lilium.arubabacon.MainActivity.map;
 
-/**
- * Created by Cabub on 11/30/2016.
- */
-
-public class PositionUpdater {
+class PositionUpdater {
     private long lastUpdate;
     private long maxUpdate;
-    //private PointF position;
     private Thread positionUpdate;
     private AtomicBoolean stop;
     private AtomicInteger running;
@@ -61,10 +50,6 @@ public class PositionUpdater {
         }, "PositionThread");
         positionUpdate.start();
     }
-
-
-
-
 
     private void updatePosition(ArrayList<iBeacon> beacons) {
         double[][] positions = new double[beacons.size()][2];

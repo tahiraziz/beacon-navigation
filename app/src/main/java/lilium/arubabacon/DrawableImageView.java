@@ -13,9 +13,7 @@ import android.util.AttributeSet;
 import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView;
 import java.util.ArrayList;
 
-import static java.lang.Math.abs;
 import static lilium.arubabacon.MainActivity.beaconKeeper;
-import static lilium.arubabacon.MainActivity.map;
 
 public class DrawableImageView extends SubsamplingScaleImageView {
     Bitmap b = BitmapFactory.decodeResource(getResources(), R.mipmap.beacon);

@@ -5,7 +5,6 @@ import android.util.Log;
 import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static java.lang.Math.abs;
 import static java.lang.Math.pow;
 import static lilium.arubabacon.MainActivity.adapter;
 import static lilium.arubabacon.MainActivity.dataHandler;

@@ -1,4 +1,4 @@
-package lilium.arubabacon;
+package lilium.arubabacon.Implementations;
 
 import org.apache.commons.math3.fitting.leastsquares.LeastSquaresFactory;
 import org.apache.commons.math3.fitting.leastsquares.LeastSquaresOptimizer;
@@ -6,6 +6,11 @@ import org.apache.commons.math3.fitting.leastsquares.LeastSquaresOptimizer.Optim
 import org.apache.commons.math3.fitting.leastsquares.LeastSquaresProblem;
 import org.apache.commons.math3.linear.ArrayRealVector;
 import org.apache.commons.math3.linear.DiagonalMatrix;
+import org.apache.commons.math3.linear.RealVector;
+
+import lilium.arubabacon.AppConfig;
+import lilium.arubabacon.Interfaces.LeastSquaresSolver;
+import lilium.arubabacon.Interfaces.TrilaterationFunction;
 
 /**
  * Solves a Trilateration problem with an instance of a
@@ -14,19 +19,19 @@ import org.apache.commons.math3.linear.DiagonalMatrix;
  * @author scott
  *
  */
-public class NonLinearLeastSquaresSolver {
+public class NonLinearLeastSquaresSolver implements LeastSquaresSolver {
 
     protected final TrilaterationFunction function;
     protected final LeastSquaresOptimizer leastSquaresOptimizer;
 
-    protected final static int MAXNUMBEROFITERATIONS = 10000;
+    protected final static int MAXNUMBEROFITERATIONS = AppConfig.get_solver_max_iterations();
 
     public NonLinearLeastSquaresSolver(TrilaterationFunction function, LeastSquaresOptimizer leastSquaresOptimizer) {
         this.function = function;
         this.leastSquaresOptimizer = leastSquaresOptimizer;
     }
 
-    public Optimum solve(double[] target, double[] weights, double[] initialPoint, boolean debugInfo) {
+    private Optimum solve(double[] target, double[] weights, double[] initialPoint, boolean debugInfo) {
         if (debugInfo) {
             System.out.println("Max Number of Iterations : " + MAXNUMBEROFITERATIONS);
         }
@@ -41,11 +46,11 @@ public class NonLinearLeastSquaresSolver {
         return leastSquaresOptimizer.optimize(leastSquaresProblem);
     }
 
-    public Optimum solve(double[] target, double[] weights, double[] initialPoint) {
+    private Optimum solve(double[] target, double[] weights, double[] initialPoint) {
             return solve(target, weights, initialPoint, false);
     }
 
-    public Optimum solve(boolean debugInfo) {
+    private Optimum solve(boolean debugInfo) {
         int numberOfPositions = function.getPositions().length;
         int positionDimension = function.getPositions()[0].length;
 
@@ -82,7 +87,7 @@ public class NonLinearLeastSquaresSolver {
         return solve(target, weights, initialPoint, debugInfo);
     }
 
-    public Optimum solve() {
-        return solve(false);
+    public RealVector solve() {
+        return solve(false).getPoint();
     }
 }

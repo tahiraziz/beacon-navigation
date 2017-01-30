@@ -1,6 +1,8 @@
-package lilium.arubabacon;
+package lilium.arubabacon.Implementations;
 
 import org.apache.commons.math3.linear.*;
+
+import lilium.arubabacon.Interfaces.LeastSquaresSolver;
 
 /**
  *
@@ -9,21 +11,21 @@ import org.apache.commons.math3.linear.*;
  *
  * @author scott
  */
-public class LinearLeastSquaresSolver {
+public class LinearLeastSquaresSolver implements LeastSquaresSolver {
 
-    protected final TrilaterationFunction function;
+    protected final StandardTrilaterationFunction function;
 
-    public LinearLeastSquaresSolver(TrilaterationFunction function) {
+    public LinearLeastSquaresSolver(StandardTrilaterationFunction function) {
         this.function = function;
     }
 
-    public RealVector solve(boolean debugInfo) {
+    private RealVector solve(boolean debugInfo) {
         int numberOfPositions = function.getPositions().length;
         int positionDimension = function.getPositions()[0].length;
 
         double[][] Ad = new double[numberOfPositions - 1][positionDimension];
 
-        // TODO: which reference position should be used?  currently using postion and distance in index 0.
+        // TODO: which reference position should be used?  currently using position and distance in index 0.
 
         for (int i = 1; i < numberOfPositions; i++) {
             double[] Adi = new double[positionDimension];

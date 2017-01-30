@@ -1,11 +1,13 @@
-package lilium.arubabacon;
+package lilium.arubabacon.Implementations;
 
-import org.apache.commons.math3.fitting.leastsquares.MultivariateJacobianFunction;
 import org.apache.commons.math3.linear.Array2DRowRealMatrix;
 import org.apache.commons.math3.linear.ArrayRealVector;
 import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.linear.RealVector;
 import org.apache.commons.math3.util.Pair;
+
+import lilium.arubabacon.AppConfig;
+import lilium.arubabacon.Interfaces.TrilaterationFunction;
 
 /**
  * Models the Trilateration problem. This is a formulation for a nonlinear least
@@ -14,9 +16,9 @@ import org.apache.commons.math3.util.Pair;
  * @author scott
  *
  */
-public class TrilaterationFunction implements MultivariateJacobianFunction {
+public class StandardTrilaterationFunction implements TrilaterationFunction {
 
-    protected static final double epsilon = 1E-7;
+    protected static final double epsilon = AppConfig.get_trilateration_epsilon();
 
     /**
      * Known positions of static nodes
@@ -28,7 +30,7 @@ public class TrilaterationFunction implements MultivariateJacobianFunction {
      */
     protected final double distances[];
 
-    public TrilaterationFunction(double positions[][], double distances[]) {
+    public StandardTrilaterationFunction(double positions[][], double distances[]) {
 
         if(positions.length < 2) {
             throw new IllegalArgumentException("Need at least two positions.");

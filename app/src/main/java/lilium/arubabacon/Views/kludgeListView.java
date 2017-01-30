@@ -1,4 +1,4 @@
-package lilium.arubabacon;
+package lilium.arubabacon.Views;
 
 import android.content.Context;
 import android.util.AttributeSet;

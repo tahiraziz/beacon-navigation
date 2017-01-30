@@ -1,4 +1,4 @@
-package lilium.arubabacon;
+package lilium.arubabacon.Views;
 
 import android.content.Context;
 import android.graphics.Bitmap;
@@ -12,6 +12,10 @@ import android.util.AttributeSet;
 //https://github.com/davemorrissey/subsampling-scale-image-view
 import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView;
 import java.util.ArrayList;
+
+import lilium.arubabacon.Interfaces.Beacon;
+import lilium.arubabacon.MainActivity;
+import lilium.arubabacon.R;
 
 import static lilium.arubabacon.MainActivity.beaconKeeper;
 
@@ -27,10 +31,12 @@ public class DrawableImageView extends SubsamplingScaleImageView {
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
-        if(MainActivity.notLoaded) return;
-        ArrayList<iBeacon> beacons = beaconKeeper.clonePlaced();
+        if(!MainActivity.loaded) return;
+
+
+        ArrayList<Beacon> beacons = beaconKeeper.clonePlaced();
         for(int i = 0; i < beacons.size(); i++) {
-            PointF offset = sourceToViewCoord(beacons.get(i).x, beacons.get(i).y);
+            PointF offset = sourceToViewCoord(beacons.get(i).getX(), beacons.get(i).getY());
             if (offset != null) {
                 Matrix matrix = new Matrix();
                 matrix.postTranslate(offset.x - b.getWidth() / 2, offset.y - b.getHeight() / 2);

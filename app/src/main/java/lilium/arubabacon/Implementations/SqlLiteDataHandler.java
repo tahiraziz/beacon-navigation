@@ -1,4 +1,4 @@
-package lilium.arubabacon;
+package lilium.arubabacon.Implementations;
 
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
@@ -14,16 +14,20 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 
-class DataHandler {
+import lilium.arubabacon.Interfaces.Beacon;
+import lilium.arubabacon.Interfaces.DataHandler;
+
+public class SqlLiteDataHandler implements DataHandler {
     SQLiteDatabase db;
-    Boolean is_open;
 
-    DataHandler(){
+    private boolean is_open;
+
+
+    public SqlLiteDataHandler(){
         is_open=false;
-
     }
 
-    public ArrayList<String> availibleDBs(String path){
+    public ArrayList<String> availableDbs(String path){
         File file = new File(path);
         ArrayList<String> filenames = new ArrayList<>();
         for (File f:file.listFiles()){
@@ -105,14 +109,14 @@ class DataHandler {
             is_open = false;
     }
 
-    public ArrayList<iBeacon> getBeacons(){
+    public ArrayList<Beacon> getBeacons(){
         if (!is_open) return null;
         Cursor c = db.query("beacons",new String[] {"mac","x","y"},null,null,null, null, null);
         if (c.getCount() > 0){
-            ArrayList<iBeacon> beaconList = new ArrayList<iBeacon>();
+            ArrayList<Beacon> beaconList = new ArrayList<Beacon>();
             c.moveToFirst();
             for (int i = 0; i < c.getCount(); i++) {
-                beaconList.add(new iBeacon(c.getString(c.getColumnIndex("mac")), -999, c.getFloat(c.getColumnIndex("x")), c.getFloat(c.getColumnIndex("y"))));
+                beaconList.add(new RssiAveragingBeacon(c.getString(c.getColumnIndex("mac")), -999, c.getFloat(c.getColumnIndex("x")), c.getFloat(c.getColumnIndex("y"))));
             }
             c.close();
             return beaconList;
@@ -121,12 +125,12 @@ class DataHandler {
         return null;
     }
 
-    public iBeacon selectBeacon(String mac, int rssi){
+    public Beacon selectBeacon(String mac, int rssi){
         if (!is_open) return null;
         Cursor c = db.query("beacons",new String[] {"mac","x","y"},"mac = ?",new String [] {mac},null, null, null);
         if (c.getCount() > 0){
             c.moveToFirst();
-            iBeacon beacon = new iBeacon(mac, rssi, c.getFloat(c.getColumnIndex("x")), c.getFloat(c.getColumnIndex("y")));
+            Beacon beacon = new RssiAveragingBeacon(mac, rssi, c.getFloat(c.getColumnIndex("x")), c.getFloat(c.getColumnIndex("y")));
             c.close();
             return beacon;
         }
@@ -155,15 +159,26 @@ class DataHandler {
         insertStatement.execute();
     }
 
-    public void removeBeacon(iBeacon beacon){
+
+    public void removeBeacon(Beacon beacon){
         if (!is_open) return;
-        int i = db.delete("beacons","mac = ?",new String[] {beacon.mac});
+        int i = db.delete("beacons","mac = ?",new String[] {beacon.getMac()});
         Log.d("dataHandler",String.valueOf(i));
     }
 
     public void removeBeacon(String mac){
         if (!is_open) return;
         db.delete("beacons","mac = ?",new String[] {mac});
+    }
+
+    @Override
+    public boolean getIsOpen() {
+        return is_open;
+    }
+
+    @Override
+    public void setIsOpen(boolean isOpen) {
+        is_open = isOpen;
     }
 
 

@@ -18,7 +18,7 @@
             android:layout_weight="1"
             android:background="@android:color/black"
             android:id="@+id/MainFrame">
-            <lilium.arubabacon.DrawableImageView
+            <lilium.arubabacon.Views.DrawableImageView
                 android:layout_gravity="center_horizontal"
                 android:layout_width="fill_parent"
                 android:layout_height="fill_parent"
@@ -37,7 +37,7 @@
                 android:adjustViewBounds="false"
                 tools:visibility="invisible" />
 
-            <lilium.arubabacon.kludgeListView
+            <lilium.arubabacon.Views.kludgeListView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_alignParentTop="true"

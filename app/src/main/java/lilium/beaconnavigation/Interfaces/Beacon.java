@@ -1,6 +1,8 @@
 package lilium.beaconnavigation.Interfaces;
 
 
+import java.util.Queue;
+
 /**
  * Created by boylec on 1/29/17.
  */
@@ -22,6 +24,7 @@ public interface Beacon {
     void addRssi(Integer Rssi);
     double smoothRssi();
 
+    Queue<Integer> getRssiQueue();
     @Override
     boolean equals(Object obj);
 

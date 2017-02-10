@@ -62,6 +62,8 @@ public class RssiAveragingBeacon implements Beacon {
     }
 
     @Override
+    public Queue<Integer> getRssiQueue(){return rssiQueue;}
+    @Override
     public void setMac(String mac) {
         this.mac = mac;
     }

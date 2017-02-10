@@ -13,6 +13,7 @@ import android.graphics.BitmapFactory;
 import android.graphics.PointF;
 import android.net.Uri;
 import android.os.Build;
+import android.os.SystemClock;
 import android.provider.MediaStore;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AlertDialog;
@@ -35,6 +36,7 @@ import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Queue;
 
 import lilium.beaconnavigation.Enums.ActivityRequestCodeEnum;
 import lilium.beaconnavigation.Implementations.RssiAveragingBeacon;
@@ -68,6 +70,7 @@ public class MainActivity extends AppCompatActivity {
     public static PositionUpdater positionUpdater;
     public static ArrayAdapter<Beacon> beaconArrayAdapter;
     public static DataHandler dataHandler;
+    public static Beacon beaconHolder;
 
     //Library
     public static SubsamplingScaleImageView map;
@@ -239,6 +242,34 @@ public class MainActivity extends AppCompatActivity {
         //Initialize the "BluetoothMonitor" object and start it
         btMonitor = new StandardBluetoothMonitor();
         btMonitor.start();
+
+
+        //Send toast messages with rssi strengths:
+        Context context = getApplicationContext();
+        String text;
+        int duration = Toast.LENGTH_LONG, i=0;
+        Queue<Integer> rssiQueue=beaconHolder.getRssiQueue();
+        ArrayList<Integer> rssiList=new ArrayList();
+        while(rssiQueue.peek()!=null)
+        {
+            rssiList.add(i,rssiQueue.remove());
+            i++;
+        }
+
+        text="";
+        long time=0;
+
+        for(int j=0; j<rssiList.size(); j++)
+        {
+            time= System.currentTimeMillis();
+            text+="RSSI Strengths: "+rssiList.get(j)+time+"\n";
+        }
+
+        Toast toast = Toast.makeText(context, text, duration);
+        toast.show();
+
+
+
 
         //Get a reference to the ImageView called newBeaconMarker from the main app view
         newBeaconMarker = (ImageView) findViewById(R.id.newBeaconMarker);

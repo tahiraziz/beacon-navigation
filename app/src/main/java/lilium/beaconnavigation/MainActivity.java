@@ -1,62 +1,73 @@
 package lilium.beaconnavigation;
 
 import android.Manifest;
-import android.app.Dialog;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothManager;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
+import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.PointF;
+import android.graphics.drawable.BitmapDrawable;
 import android.net.Uri;
 import android.os.Build;
+import android.os.Bundle;
 import android.provider.MediaStore;
 import android.support.design.widget.Snackbar;
-import android.support.v7.app.AlertDialog;
+import android.support.v4.content.res.ResourcesCompat;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
 import android.support.v7.widget.AppCompatTextView;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
-import android.widget.Button;
-import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.ListView;
+import android.widget.SeekBar;
+import android.widget.Spinner;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.davemorrissey.labs.subscaleview.ImageSource;
-import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView;
+import com.davemorrissey.labs.subscaleview.ImageViewState;
 
-import java.io.File;
 import java.util.ArrayList;
+import java.util.List;
 
+import lilium.beaconnavigation.Classes.Location;
+import lilium.beaconnavigation.Classes.MapGraph;
+import lilium.beaconnavigation.Classes.Room;
 import lilium.beaconnavigation.Enums.ActivityRequestCodeEnum;
-import lilium.beaconnavigation.Implementations.RssiAveragingBeacon;
 import lilium.beaconnavigation.Implementations.MultiThreadedBeaconKeeper;
 import lilium.beaconnavigation.Implementations.MultiThreadedPositionUpdater;
-import lilium.beaconnavigation.Implementations.SqlLiteDataHandler;
+import lilium.beaconnavigation.Implementations.RssiAveragingBeacon;
 import lilium.beaconnavigation.Implementations.StandardBluetoothMonitor;
 import lilium.beaconnavigation.Interfaces.Beacon;
 import lilium.beaconnavigation.Interfaces.BeaconKeeper;
 import lilium.beaconnavigation.Interfaces.BluetoothMonitor;
-import lilium.beaconnavigation.Interfaces.DataHandler;
 import lilium.beaconnavigation.Interfaces.PositionUpdater;
-import lilium.beaconnavigation.R;
-
-import static lilium.beaconnavigation.Enums.ActivityRequestCodeEnum.ImageSelectActivity;
+import lilium.beaconnavigation.Views.DrawableImageView;
 
 public class MainActivity extends AppCompatActivity {
 
     //View references
     private ImageView newBeaconMarker;
     private ListView beaconListView;
-    private String newMapName;
+
+    //Walking navigator variables
+    Spinner rooms;
+    TextView mapDimensText;
+    public static SeekBar mapWidthSeekBar;
+    public static SeekBar mapHeightSeekBar;
+
+    private List<Location> path;
+
+    private int source;
+    private int dest;
+    private MapGraph mapGraph;
 
     //Native objects for Bluetooth control
     public static BluetoothManager btManager;
@@ -67,17 +78,18 @@ public class MainActivity extends AppCompatActivity {
     public static BeaconKeeper beaconKeeper;
     public static PositionUpdater positionUpdater;
     public static ArrayAdapter<Beacon> beaconArrayAdapter;
-    public static DataHandler dataHandler;
+    public static DBManager dbManager;
 
     //Library
-    public static SubsamplingScaleImageView map;
+    public static DrawableImageView map;
 
     public static PointF position = new PointF(0, 0);
     public static ArrayList<String> availableDbFilePaths;
 
-    public static boolean diag_resolved;
     public static boolean loaded = false;
 
+    public MainActivity() {
+    }
 
 
     //First thing that fires off in app:
@@ -165,15 +177,11 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-
     //Android 6.0 requires runtime user permission (api level 23 required...)
-
-
     @Override
     public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
         checkPermissions();
     }
-
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -182,55 +190,107 @@ public class MainActivity extends AppCompatActivity {
             case BlueToothActivity:
                 initializeBluetooth();
                 break;
-            case ImageSelectActivity:
-                if (data == null) {
-                    //Display an error
-                    return;
-                }
-                File file = new File(getRealPathFromURI(data.getData()));
-                if (!file.exists()) {
-                    Toast.makeText(MainActivity.this, "File does not exist", Toast.LENGTH_LONG).show();
-                    LoadMap(dataHandler.getIsOpen());
-                } else {
-                    dataHandler.newMap(newMapName, getFilesDir(), file);
-                    setMap(dataHandler.getMap());
-                    AppConfig.set_last_map_filename(newMapName);
-                }
-                break;
         }
 
     }
 
-    void setMap(byte[] bytes) {
-        map.setImage(ImageSource.bitmap(BitmapFactory.decodeByteArray(bytes, 0, bytes.length)));
-    }
-
     //This setup method runs after the Bluetooth has been enabled. It gives us handlers for all the buttons on the view
     void setup() {
-        //init database
-        newMapName = new String();
-
         //dataHandler is used to do SQLLite database transactions (reading and writing data)
-        dataHandler = new SqlLiteDataHandler();
+        dbManager = DBManager.getDBManager(this);
 
-        //Get a reference to the SubsamplingScaleImageView in our view so we can do things with it
-        map = (SubsamplingScaleImageView) findViewById(R.id.map);
+        //Get a reference to the SubSamplingScaleImageView in our view so we can do things with it
+        map = (DrawableImageView)findViewById(R.id.map);
+
+        //Walking navigator init
+        rooms = (Spinner) findViewById(R.id.rooms);
+
+        //Text box and two sliders to tweak the map width/map height constants to fit the screen correctly
+        mapDimensText = (TextView) findViewById(R.id.mapdimenstext);
+        mapWidthSeekBar = (SeekBar) findViewById(R.id.mapwidth);
+        mapHeightSeekBar = (SeekBar) findViewById(R.id.mapheight);
+
+        mapDimensText.setText("Map Width: " + mapWidthSeekBar.getProgress() + ", Map Height: " + mapHeightSeekBar.getProgress());
+
+        mapWidthSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
+                mapDimensText.setText("Map Width: " + i + ", Map Height: " + mapHeightSeekBar.getProgress());
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+
+            }
+        });
+
+        mapHeightSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
+                mapDimensText.setText("Map Width: " + mapWidthSeekBar.getProgress() + ", Map Height: " + i);
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+
+            }
+        });
+
+        //Load in the map
+        BitmapFactory.Options opts = new BitmapFactory.Options();
+        opts.inMutable = true;
+
+        Bitmap mapImage = BitmapFactory.decodeResource(getResources(), R.drawable.map, opts);
+
+        map.setImage(ImageSource.bitmap(mapImage));
+
+        //build DB
+        mapGraph = new MapGraph(dbManager);
+        mapGraph.buildGraph();
+        source = 74;
+
+        //set drop down list
+        List<String> roomNo = new ArrayList<>();
+        final List<Room> roomList = dbManager.queryRoom();
+        for (Room s : roomList)
+            roomNo.add(s.name);
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, roomNo);
+        rooms.setAdapter(adapter);
+        rooms.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
+                dest = roomList.get(i).id;
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> adapterView) {
+
+            }
+        });
+
+        position = new PointF(93,120); //the current location
+        map.invalidate();
 
         //Do things when the map is touched
         map.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View v, MotionEvent event) {
-                newBeaconMarker.setX(event.getX() - newBeaconMarker.getWidth() / 2);
-                newBeaconMarker.setY(event.getY() - newBeaconMarker.getHeight() / 2);
+                newBeaconMarker.setX(event.getX());
+                newBeaconMarker.setY(event.getY());
                 newBeaconMarker.setVisibility(View.VISIBLE);
                 return false;
             }
         });
-
-        //Run GetLastMap (this sets "map" static field to the last loaded bitmap from the sqlite db on the device
-        //if it returns 0, then that means there has been no map in the past, so we will LoadMap (this will force the user to choose a map if one doesn't exist)
-        if (!GetLastMap())
-            LoadMap(true);
 
         //Initialize the "BeaconKeeper" object and start it
         beaconKeeper = new MultiThreadedBeaconKeeper(AppConfig.get_maximum_quiet());
@@ -266,7 +326,7 @@ public class MainActivity extends AppCompatActivity {
                 //we can't trust that it will contain the item at index.
                 //We only need the MAC address, so we can pull the string from the TextViews of the ArrayList
                 String mac = ((AppCompatTextView) beaconListView.getChildAt(index)).getText().toString();
-                dataHandler.addBeacon(mac, pos.x, pos.y);
+                dbManager.addBeacon(mac, pos.x, pos.y);
 
                 //Try to move the beacon from newBeacons to beacons, if it still exists
                 //Create a new beacon so we don't have to reference an old one. Initial RSSI is -1
@@ -315,7 +375,7 @@ public class MainActivity extends AppCompatActivity {
 
                 Beacon nearestBeacon = beaconKeeper.nearestBeacon(pos.x, pos.y);
                 if (nearestBeacon != null) {
-                    dataHandler.removeBeacon(nearestBeacon);
+                    dbManager.removeBeacon(nearestBeacon);
                     beaconKeeper.removeBeacon(nearestBeacon);
                 }
 
@@ -335,7 +395,7 @@ public class MainActivity extends AppCompatActivity {
 
                 Beacon nearestBeacon = beaconKeeper.nearestBeacon(pos.x, pos.y);
                 if (nearestBeacon != null) {
-                    dataHandler.wipeDB();
+                    dbManager.wipeBeacons();
                     beaconKeeper.wipeBeacons();
                 }
                 beaconArrayAdapter.notifyDataSetChanged();
@@ -344,133 +404,10 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        //Get a reference to the open map button
-        imageButton = (ImageButton) findViewById(R.id.OpenMapButton);
-
-        //Set the on click for the open map button
-        imageButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                CreateNewMap();
-            }
-        });
-
-        //Get a reference to the load map button
-        imageButton = (ImageButton) findViewById(R.id.LoadMapButton);
-
-        //Set the on click for the load map button
-        imageButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                LoadMap(false);
-            }
-        });
-
-        //Get a reference to the delete map button
-        imageButton = (ImageButton) findViewById(R.id.DeleteMapButton);
-
-        //Set the on click for the delete map button
-        imageButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                DeleteMap();
-            }
-        });
-
         //Instantiate the position updater
         positionUpdater = new MultiThreadedPositionUpdater(AppConfig.get_minimium_position_delay());
         positionUpdater.start();
         loaded = true;
-    }
-
-
-    //Sets the static property "map" to the last record of the map from the sqlite db on the device,
-    //if the file does not exist in preferences, return false
-    boolean GetLastMap() {
-        String lastMapFileName = AppConfig.get_last_map_filename();
-        if (lastMapFileName != null) {
-            String lastMap = String.format("%s/%s", getFilesDir(), lastMapFileName);
-            File filename = new File(lastMap);
-            if (filename.exists()) {
-                dataHandler.open(lastMap);
-                setMap(dataHandler.getMap());
-                return true;
-            }
-        }
-        return false;
-    }
-
-    //Start the create new map process
-    void CreateNewMap() {
-        NewMapDialog().show();
-    }
-
-    //The dialog to create a new map
-    public Dialog NewMapDialog() {
-        final Dialog dialog = new Dialog(MainActivity.this);
-        diag_resolved = false;
-
-        //The view is set to the newmap
-        dialog.setContentView(R.layout.newmap);
-        dialog.setTitle("Add New Map");
-        Button button = (Button) dialog.findViewById(R.id.select_map_button);
-        button.setOnClickListener(new View.OnClickListener() {
-            public void onClick(View v) {
-
-                EditText edit = (EditText) dialog.findViewById(R.id.mapName);
-                String text = edit.getText().toString();
-
-                //Pick a file to use for a map
-                newMapName = text;
-                if (newMapName.length() > 0) {
-                    diag_resolved = true;
-                    Intent getIntent = new Intent(Intent.ACTION_GET_CONTENT);
-                    getIntent.setType("image/*");
-
-                    Intent pickIntent = new Intent(Intent.ACTION_PICK, android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
-                    pickIntent.setType("image/*");
-
-                    Intent chooserIntent = Intent.createChooser(getIntent, "Select Image");
-                    chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, new Intent[]{pickIntent});
-
-                    startActivityForResult(chooserIntent, ImageSelectActivity.value());
-                }
-
-                dialog.cancel();
-            }
-
-        });
-        /*dialog.setOnCancelListener(new DialogInterface.OnCancelListener() {
-            @Override
-            public void onCancel(DialogInterface dialogInterface) {
-                if (!diag_resolved) {
-                    if (!dataHandler.is_open) {
-                        Toast.makeText(MainActivity.this, "You Must Create a Map to Continue", Toast.LENGTH_LONG).show();
-                        LoadMap(true);
-                    }
-                    else {
-                        Toast.makeText(MainActivity.this, "Cancelled", Toast.LENGTH_LONG).show();
-                    }
-                }else{diag_resolved = false;}
-            }
-        });*/
-
-        dialog.setOnDismissListener(new DialogInterface.OnDismissListener() {
-            @Override
-            public void onDismiss(DialogInterface dialogInterface) {
-                if (!diag_resolved) {
-                    if (!dataHandler.getIsOpen()) {
-                        Toast.makeText(MainActivity.this, "You Must Create a Map to Continue", Toast.LENGTH_LONG).show();
-                        LoadMap(true);
-                    } else {
-                        Toast.makeText(MainActivity.this, "Cancelled", Toast.LENGTH_LONG).show();
-                    }
-                } else {
-                    diag_resolved = false;
-                }
-            }
-        });
-        return dialog;
     }
 
     private String getRealPathFromURI(Uri contentURI) {
@@ -487,94 +424,11 @@ public class MainActivity extends AppCompatActivity {
         return result;
     }
 
-    //Tries to get the map to use
-    private void LoadMap(final boolean ForceSelect) {
-        //gets the filepaths of all files ending in .db from the files directory for this application
-        availableDbFilePaths = dataHandler.availableDbs(getFilesDir().getPath());
-
-        if (availableDbFilePaths.size() > 0) {
-            //pick a db file to use to get the maps using an alert dialog
-            AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
-            CharSequence[] cs = availableDbFilePaths.toArray(new CharSequence[availableDbFilePaths.size()]);
-            builder.setTitle("Pick a Map")
-                    .setItems(cs, new DialogInterface.OnClickListener() {
-                        public void onClick(DialogInterface dialog, int which) {
-                            // The 'which' argument contains the index position
-                            // of the selected item
-                            dataHandler.open(String.format("%s/%s.db", getFilesDir(), availableDbFilePaths.get(which)));
-                            setMap(dataHandler.getMap());
-                            AppConfig.set_last_map_filename(availableDbFilePaths.get(which));
-                        }
-                    })
-                    .setOnCancelListener(new DialogInterface.OnCancelListener() {
-                        @Override
-                        public void onCancel(DialogInterface dialogInterface) {
-                            if (!ForceSelect)
-                                Toast.makeText(MainActivity.this, "Cancelled", Toast.LENGTH_LONG).show();
-                            else
-                                CreateNewMap();
-                        }
-                    });
-            Dialog dialog = builder.create();
-            dialog.show();
-            //last one opened?
-        } else {
-            //If there were no available db file paths
-            if (!ForceSelect) {
-                //There are no available maps
-                Toast.makeText(MainActivity.this, "No Available Maps", Toast.LENGTH_LONG).show();
-            }
-            else {
-                //Create a new map
-                CreateNewMap();
-            }
-        }
-    }
-
-    private void DeleteMap() {
-
-        availableDbFilePaths = dataHandler.availableDbs(getFilesDir().getPath());
-        if (
-        availableDbFilePaths.size() > 0) {
-            //pick one
-            AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
-            CharSequence[] cs =
-        availableDbFilePaths.toArray(new CharSequence[
-        availableDbFilePaths.size()]);
-            builder.setTitle("Delete a Map")
-                    .setItems(cs, new DialogInterface.OnClickListener() {
-                        public void onClick(DialogInterface dialog, int which) {
-                            // The 'which' argument contains the index position
-                            // of the selected item
-                            if (dataHandler.getMapName().equals(
-        availableDbFilePaths.get(which))) {
-                                dataHandler.close();
-                                map.setImage(ImageSource.resource(R.mipmap.black));
-                                beaconKeeper.wipeBeacons();
-                                File file = new File(String.format("%s/%s.db", getFilesDir(),
-        availableDbFilePaths.get(which)));
-                                if (file.exists())
-                                    file.delete();
-                                LoadMap(true);
-                            } else {
-                                File file = new File(String.format("%s/%s.db", getFilesDir(),
-        availableDbFilePaths.get(which)));
-                                if (file.exists())
-                                    file.delete();
-                            }
-
-                        }
-                    })
-                    .setOnCancelListener(new DialogInterface.OnCancelListener() {
-                        @Override
-                        public void onCancel(DialogInterface dialogInterface) {
-                            Toast.makeText(MainActivity.this, "Cancelled", Toast.LENGTH_LONG).show();
-                        }
-                    });
-            Dialog dialog = builder.create();
-            dialog.show();
-        } else {
-            Toast.makeText(MainActivity.this, "No Availible Maps", Toast.LENGTH_LONG).show();
-        }
+    public void getRoute(View view) {
+        if(source==dest)
+            return;
+        path = mapGraph.getPath(source, dest);
+        map.setPath(path);
+        map.invalidate();
     }
 }

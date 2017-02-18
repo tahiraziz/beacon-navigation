@@ -119,7 +119,7 @@ public class MultiThreadedBeaconKeeper implements BeaconKeeper {
         Beacon beacon = null;
         try
         {
-            beacon = MainActivity.dataHandler.selectBeacon(mac, rssi);
+            beacon = MainActivity.dbManager.selectBeacon(mac, rssi);
         }
         catch (Exception e)
         {

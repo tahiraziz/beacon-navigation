@@ -24,8 +24,6 @@ public class NonLinearLeastSquaresSolver implements LeastSquaresSolver {
     protected final TrilaterationFunction function;
     protected final LeastSquaresOptimizer leastSquaresOptimizer;
 
-    protected final static int MAXNUMBEROFITERATIONS = AppConfig.get_solver_max_iterations();
-
     public NonLinearLeastSquaresSolver(TrilaterationFunction function, LeastSquaresOptimizer leastSquaresOptimizer) {
         this.function = function;
         this.leastSquaresOptimizer = leastSquaresOptimizer;
@@ -33,7 +31,7 @@ public class NonLinearLeastSquaresSolver implements LeastSquaresSolver {
 
     private Optimum solve(double[] target, double[] weights, double[] initialPoint, boolean debugInfo) {
         if (debugInfo) {
-            System.out.println("Max Number of Iterations : " + MAXNUMBEROFITERATIONS);
+            System.out.println("Max Number of Iterations : " + AppConfig.get_solver_max_iterations());
         }
 
         LeastSquaresProblem leastSquaresProblem = LeastSquaresFactory.create(
@@ -41,7 +39,7 @@ public class NonLinearLeastSquaresSolver implements LeastSquaresSolver {
                 function,
                 // target values at optimal point in least square equation
                 // (x0+xi)^2 + (y0+yi)^2 + ri^2 = target[i]
-                new ArrayRealVector(target, false), new ArrayRealVector(initialPoint, false), new DiagonalMatrix(weights), null, 1000, MAXNUMBEROFITERATIONS);
+                new ArrayRealVector(target, false), new ArrayRealVector(initialPoint, false), new DiagonalMatrix(weights), null, 1000, AppConfig.get_solver_max_iterations());
 
         return leastSquaresOptimizer.optimize(leastSquaresProblem);
     }

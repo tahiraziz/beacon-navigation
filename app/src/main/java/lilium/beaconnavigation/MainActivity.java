@@ -25,6 +25,7 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.SeekBar;
 import android.widget.Spinner;
@@ -33,6 +34,9 @@ import android.widget.Toast;
 
 import com.davemorrissey.labs.subscaleview.ImageSource;
 import com.davemorrissey.labs.subscaleview.ImageViewState;
+
+import org.apache.commons.math3.geometry.euclidean.threed.Line;
+import org.w3c.dom.Text;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -48,20 +52,20 @@ import lilium.beaconnavigation.Implementations.StandardBluetoothMonitor;
 import lilium.beaconnavigation.Interfaces.Beacon;
 import lilium.beaconnavigation.Interfaces.BeaconKeeper;
 import lilium.beaconnavigation.Interfaces.BluetoothMonitor;
+import lilium.beaconnavigation.Interfaces.Configurator;
 import lilium.beaconnavigation.Interfaces.PositionUpdater;
 import lilium.beaconnavigation.Views.DrawableImageView;
+import lilium.beaconnavigation.Views.TextOverlaySeekBar;
 
 public class MainActivity extends AppCompatActivity {
 
     //View references
     private ImageView newBeaconMarker;
     private ListView beaconListView;
+    private LinearLayout appConfigView;
 
     //Walking navigator variables
     Spinner rooms;
-    TextView mapDimensText;
-    public static SeekBar mapWidthSeekBar;
-    public static SeekBar mapHeightSeekBar;
 
     private List<Location> path;
 
@@ -105,10 +109,11 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         //Make sure we have the permissions we need to run this app, if we don't exit the app.
-        if(!initializePermissions()) {
+        if (!initializePermissions()) {
             System.runFinalization();
             System.exit(0);
-        };
+        }
+        ;
 
         //Initialize our bluetooth services in the application so we can read BLE advertisements
         initializeBluetooth();
@@ -119,14 +124,12 @@ public class MainActivity extends AppCompatActivity {
     //that the app needs in order to run
     boolean initializePermissions() {
         //Are we running less than Android 6.0? If so permissions are good so return true
-        if (Build.VERSION.SDK_INT < 23)
-        {
+        if (Build.VERSION.SDK_INT < 23) {
             return true;
         }
 
         //Check permissions (perhaps they are already good?) If they're good return true
-        if(checkPermissions())
-        {
+        if (checkPermissions()) {
             return true;
         }
 
@@ -134,8 +137,7 @@ public class MainActivity extends AppCompatActivity {
         requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1);
 
         //If they are good now return true
-        if(checkPermissions())
-        {
+        if (checkPermissions()) {
             return true;
         }
 
@@ -145,13 +147,12 @@ public class MainActivity extends AppCompatActivity {
 
     //Checks for the permissions that we need in this app
     boolean checkPermissions() {
-        if(Build.VERSION.SDK_INT < 23) {
+        if (Build.VERSION.SDK_INT < 23) {
             return true;
         }
-        if (    checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED &&
+        if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED &&
                 checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED &&
-                checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED)
-        {
+                checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
             return true;
         }
 
@@ -185,8 +186,7 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        switch (ActivityRequestCodeEnum.fromInt(requestCode))
-        {
+        switch (ActivityRequestCodeEnum.fromInt(requestCode)) {
             case BlueToothActivity:
                 initializeBluetooth();
                 break;
@@ -200,49 +200,78 @@ public class MainActivity extends AppCompatActivity {
         dbManager = DBManager.getDBManager(this);
 
         //Get a reference to the SubSamplingScaleImageView in our view so we can do things with it
-        map = (DrawableImageView)findViewById(R.id.map);
+        map = (DrawableImageView) findViewById(R.id.map);
 
         //Walking navigator init
         rooms = (Spinner) findViewById(R.id.rooms);
 
         //Text box and two sliders to tweak the map width/map height constants to fit the screen correctly
-        mapDimensText = (TextView) findViewById(R.id.mapdimenstext);
-        mapWidthSeekBar = (SeekBar) findViewById(R.id.mapwidth);
-        mapHeightSeekBar = (SeekBar) findViewById(R.id.mapheight);
+        TextOverlaySeekBar mapWidthConfig = (TextOverlaySeekBar) findViewById(R.id.config_mapwidth);
+        TextOverlaySeekBar mapHeightConfig = (TextOverlaySeekBar) findViewById(R.id.config_mapheight);
+        TextOverlaySeekBar advertQueueConfig = (TextOverlaySeekBar) findViewById(R.id.config_advert_queue_max_length);
+        TextOverlaySeekBar maxQuietConfig = (TextOverlaySeekBar) findViewById(R.id.config_max_quiet);
+        TextOverlaySeekBar maxSpawnWaitConfig = (TextOverlaySeekBar) findViewById(R.id.config_max_spawn_wait);
+        TextOverlaySeekBar minPosDelayConfig = (TextOverlaySeekBar) findViewById(R.id.config_min_position_delay);
+        TextOverlaySeekBar monFilterMinConfig = (TextOverlaySeekBar) findViewById(R.id.config_monitor_filter_min);
+        TextOverlaySeekBar maxIterConfig = (TextOverlaySeekBar) findViewById(R.id.config_solver_max_iterations);
 
-        mapDimensText.setText("Map Width: " + mapWidthSeekBar.getProgress() + ", Map Height: " + mapHeightSeekBar.getProgress());
+        advertQueueConfig.setProgress(AppConfig.get_beacon_advert_queue_max_length());
+        maxQuietConfig.setProgress(AppConfig.get_maximum_quiet());
+        maxSpawnWaitConfig.setProgress(AppConfig.get_maximum_spawn_wait());
+        minPosDelayConfig.setProgress(AppConfig.get_minimium_position_delay());
+        monFilterMinConfig.setProgress(AppConfig.get_bt_mon_filter_min());
+        maxIterConfig.setProgress(AppConfig.get_solver_max_iterations());
+        mapWidthConfig.setProgress(AppConfig.get_map_width_constant());
+        mapHeightConfig.setProgress(AppConfig.get_map_height_constant());
 
-        mapWidthSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+        advertQueueConfig.HookToConfig(new Configurator() {
             @Override
-            public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
-                mapDimensText.setText("Map Width: " + i + ", Map Height: " + mapHeightSeekBar.getProgress());
+            public void SetValue(int val) {
+                AppConfig.set_beacon_advert_queue_max_length(val);
             }
-
+        });
+        maxQuietConfig.HookToConfig(new Configurator() {
             @Override
-            public void onStartTrackingTouch(SeekBar seekBar) {
-
+            public void SetValue(int val) {
+                AppConfig.set_maximum_quiet(val);
             }
-
+        });
+        maxSpawnWaitConfig.HookToConfig(new Configurator() {
             @Override
-            public void onStopTrackingTouch(SeekBar seekBar) {
-
+            public void SetValue(int val) {
+                AppConfig.set_max_spawn_wait(val);
+            }
+        });
+        minPosDelayConfig.HookToConfig(new Configurator() {
+            @Override
+            public void SetValue(int val) {
+                AppConfig.set_minimum_position_delay(val);
+            }
+        });
+        monFilterMinConfig.HookToConfig(new Configurator() {
+            @Override
+            public void SetValue(int val) {
+                AppConfig.set_bt_mon_filter_min(val);
+            }
+        });
+        maxIterConfig.HookToConfig(new Configurator() {
+            @Override
+            public void SetValue(int val) {
+                AppConfig.set_solver_max_iterations(val);
             }
         });
 
-        mapHeightSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+        mapWidthConfig.HookToConfig(new Configurator() {
             @Override
-            public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
-                mapDimensText.setText("Map Width: " + mapWidthSeekBar.getProgress() + ", Map Height: " + i);
+            public void SetValue(int val) {
+                AppConfig.set_map_width_constant(val);
             }
+        });
 
+        mapHeightConfig.HookToConfig(new Configurator() {
             @Override
-            public void onStartTrackingTouch(SeekBar seekBar) {
-
-            }
-
-            @Override
-            public void onStopTrackingTouch(SeekBar seekBar) {
-
+            public void SetValue(int val) {
+                AppConfig.set_map_height_constant(val);
             }
         });
 
@@ -278,7 +307,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        position = new PointF(93,120); //the current location
+        position = new PointF(93, 120); //the current location
         map.invalidate();
 
         //Do things when the map is touched
@@ -293,7 +322,7 @@ public class MainActivity extends AppCompatActivity {
         });
 
         //Initialize the "BeaconKeeper" object and start it
-        beaconKeeper = new MultiThreadedBeaconKeeper(AppConfig.get_maximum_quiet());
+        beaconKeeper = new MultiThreadedBeaconKeeper();
         beaconKeeper.start();
 
         //Initialize the "BluetoothMonitor" object and start it
@@ -305,6 +334,7 @@ public class MainActivity extends AppCompatActivity {
 
         //Get a reference to the beacon list of the main app view
         beaconListView = (ListView) findViewById(R.id.beaconListView);
+        appConfigView = (LinearLayout) findViewById(R.id.appConfigView);
 
         //Setup the array adapter to bind beacons to the main view's simple_list_item_1
         beaconArrayAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, beaconKeeper.cloneUnplaced());
@@ -341,9 +371,6 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        //Hide the beacon list view
-        beaconListView.setVisibility(View.INVISIBLE);
-
         //Get a reference to the AddBeaconButton on the main view
         ImageButton imageButton = (ImageButton) findViewById(R.id.AddBeaconButton);
 
@@ -351,7 +378,7 @@ public class MainActivity extends AppCompatActivity {
         imageButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if (beaconListView.getVisibility() == View.INVISIBLE) {
+                if (beaconListView.getVisibility() == View.GONE) {
                     if (!beaconArrayAdapter.isEmpty()) {
                         beaconListView.setVisibility(View.VISIBLE);
                     } else {
@@ -359,8 +386,18 @@ public class MainActivity extends AppCompatActivity {
                                 .setAction("Action", null).show();
                     }
                 } else {
-                    beaconListView.setVisibility(View.INVISIBLE);
+                    beaconListView.setVisibility(View.GONE);
                 }
+            }
+        });
+
+        imageButton = (ImageButton) findViewById(R.id.AppConfigButton);
+
+        //Set the on click for the add beacon button
+        imageButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                appConfigView.setVisibility(appConfigView.getVisibility() == View.GONE ? View.VISIBLE : View.GONE);
             }
         });
 
@@ -405,7 +442,7 @@ public class MainActivity extends AppCompatActivity {
         });
 
         //Instantiate the position updater
-        positionUpdater = new MultiThreadedPositionUpdater(AppConfig.get_minimium_position_delay());
+        positionUpdater = new MultiThreadedPositionUpdater();
         positionUpdater.start();
         loaded = true;
     }
@@ -425,7 +462,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void getRoute(View view) {
-        if(source==dest)
+        if (source == dest)
             return;
         path = mapGraph.getPath(source, dest);
         map.setPath(path);

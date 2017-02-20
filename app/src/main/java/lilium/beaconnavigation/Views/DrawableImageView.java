@@ -17,13 +17,11 @@ import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView;
 import java.util.ArrayList;
 import java.util.List;
 
+import lilium.beaconnavigation.AppConfig;
 import lilium.beaconnavigation.Classes.Location;
 import lilium.beaconnavigation.Interfaces.Beacon;
 import lilium.beaconnavigation.MainActivity;
 import lilium.beaconnavigation.R;
-
-import static lilium.beaconnavigation.MainActivity.mapHeightSeekBar;
-import static lilium.beaconnavigation.MainActivity.mapWidthSeekBar;
 
 public class DrawableImageView extends SubsamplingScaleImageView {
     Bitmap b = BitmapFactory.decodeResource(getResources(), R.mipmap.beacon);
@@ -39,6 +37,9 @@ public class DrawableImageView extends SubsamplingScaleImageView {
 
     @Override
     protected void onDraw(Canvas canvas) {
+        int mapWidthConstant = AppConfig.get_map_width_constant();
+        int mapHeightConstant = AppConfig.get_map_height_constant();
+
         super.onDraw(canvas);
         if(!MainActivity.loaded) return;
 
@@ -46,11 +47,8 @@ public class DrawableImageView extends SubsamplingScaleImageView {
         int height = this.getMeasuredHeight();
         int width = this.getMeasuredWidth();
 
-        float map_width = mapWidthSeekBar.getProgress();
-        float map_height = mapHeightSeekBar.getProgress();
-
-        float x=(width*MainActivity.position.x/map_width);
-        float y=(height*MainActivity.position.y/map_height);
+        float x=(width*MainActivity.position.x/mapWidthConstant);
+        float y=(height*MainActivity.position.y/mapHeightConstant);
 
         Paint p=new Paint();
         p.setColor(Color.BLUE);
@@ -64,11 +62,11 @@ public class DrawableImageView extends SubsamplingScaleImageView {
             if (path != null && path.size() >= 2) {
                 Path vPath = new Path();
 
-                PointF vPrev = sourceToViewCoord(width* path.get(0).x/map_width, height*path.get(0).y/map_height);
+                PointF vPrev = sourceToViewCoord(width* path.get(0).x/mapWidthConstant, height*path.get(0).y/mapHeightConstant);
 
                 vPath.moveTo(vPrev.x, vPrev.y);
                 for (int i = 1; i < path.size(); i++) {
-                    PointF vPoint = sourceToViewCoord(path.get(i).x*width/map_width, path.get(i).y*height/map_height);
+                    PointF vPoint = sourceToViewCoord(path.get(i).x*width/mapWidthConstant, path.get(i).y*height/mapHeightConstant);
 
                     vPath.lineTo(vPoint.x,vPoint.y);
                     vPrev = vPoint;
@@ -83,21 +81,6 @@ public class DrawableImageView extends SubsamplingScaleImageView {
                 p.setColor(Color.argb(175, 51, 181, 229));
                 canvas.drawPath(vPath, p);
             }
-//            for(int i=1;i<path.size();i++){
-//                Location cur=path.get(i);
-//
-//                PointF startLinePos = new PointF (width*prev.x/map_width,height*prev.y/map_height);
-//                PointF endLinePos = new PointF (width*cur.x/map_width, height*cur.y/map_height);
-//
-//                startLinePos = sourceToViewCoord(startLinePos);
-//                endLinePos = sourceToViewCoord(endLinePos);
-//
-//                canvas.drawLine(startLinePos.x,startLinePos.y,endLinePos.x,endLinePos.y,p);
-//
-//                prev=cur;
-//            }
-
-//            path=null;
         }
 
         //End walking nav stuff

@@ -13,7 +13,6 @@ public class RssiAveragingBeacon implements Beacon {
     private int rssi;
 
     private Queue<Integer> rssiQueue;
-    private final static int QUEUE_MAX_LENGTH = AppConfig.get_beacon_advert_queue_max_length();
 
     public RssiAveragingBeacon(String mac, int rssi, float x, float y){
         rssiQueue = new LinkedList<>();
@@ -100,7 +99,9 @@ public class RssiAveragingBeacon implements Beacon {
     }
 
     public synchronized void addRssi(Integer Rssi){
-        if (rssiQueue.size() >= QUEUE_MAX_LENGTH ){
+        int maxLength = AppConfig.get_beacon_advert_queue_max_length();
+        while(rssiQueue.size() >= maxLength)
+        {
             rssiQueue.remove();
         }
         rssiQueue.add(Rssi);

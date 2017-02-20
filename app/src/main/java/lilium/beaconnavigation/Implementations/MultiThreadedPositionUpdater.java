@@ -20,17 +20,12 @@ import lilium.beaconnavigation.MainActivity;
 
 public class MultiThreadedPositionUpdater implements PositionUpdater {
     private long lastUpdate;
-    private long maxUpdate;
     private Thread positionUpdate;
     private AtomicBoolean stop;
     private AtomicInteger running;
 
-    private final long MaxSpawnWait = AppConfig.get_maximum_spawn_wait();
-
-
-    public MultiThreadedPositionUpdater(final long Maximum_Update) {
+    public MultiThreadedPositionUpdater() {
         lastUpdate = System.currentTimeMillis();
-        maxUpdate = Maximum_Update;
         stop = new AtomicBoolean(false);
         running = new AtomicInteger(0);
 
@@ -41,11 +36,11 @@ public class MultiThreadedPositionUpdater implements PositionUpdater {
             public void run(){
                 while(! stop.get()) {
                     if (running.compareAndSet(0,1)) { // is an async position updater running on any threads?
-                        if (System.currentTimeMillis() - lastUpdate > Maximum_Update) {
+                        if (System.currentTimeMillis() - lastUpdate > AppConfig.get_minimium_position_delay()) {
                             //Runs position update only on "placed" beacons
                             new PositionUpdate().execute(MainActivity.beaconKeeper.clonePlaced());
                            try{
-                                Thread.sleep(MaxSpawnWait);
+                                Thread.sleep(AppConfig.get_maximum_spawn_wait());
                             } catch (InterruptedException e){
                                 Log.e("PositionThread","Interrupted Exception");
                                 e.printStackTrace();
@@ -87,7 +82,7 @@ public class MultiThreadedPositionUpdater implements PositionUpdater {
                 MainActivity.position = new PointF((float) calculatedPosition[0], (float) calculatedPosition[1]);
                 lastUpdate = System.currentTimeMillis();
                 try{
-                    Thread.sleep(maxUpdate);
+                    Thread.sleep(AppConfig.get_minimium_position_delay());
                 } catch (InterruptedException e){
                     Log.e("async_position","Interrupted Exception");
                 }

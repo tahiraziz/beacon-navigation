@@ -24,7 +24,6 @@ public class StandardBluetoothMonitor implements BluetoothMonitor{
     private byte beacon_filter [];
 
     //The minimum RSSI that we care about (we won't treat any other scans as viable beacons unless their RSSIs are greater than this number
-    private final static int FILTER_MIN = AppConfig.get_bt_mon_filter_min();
 
     public StandardBluetoothMonitor()
     {
@@ -38,7 +37,7 @@ public class StandardBluetoothMonitor implements BluetoothMonitor{
                 public void onScanResult(int callbackType, final ScanResult result) {
                     //filter outlier beacons
                     int thisScansRssi = result.getRssi();
-                    if (is_Beacon(result.getScanRecord().getBytes()) && thisScansRssi > FILTER_MIN) {
+                    if (is_Beacon(result.getScanRecord().getBytes()) && thisScansRssi > AppConfig.get_bt_mon_filter_min()) {
                         //Do an idempotent update of beacons in beacon keeper (whether "placed" or "unplaced" within the beacon keeper)
                         MainActivity.beaconKeeper.async_updateBeacon(result.getDevice().getAddress().replace(":", ""),thisScansRssi);
                     }
@@ -53,7 +52,7 @@ public class StandardBluetoothMonitor implements BluetoothMonitor{
                 @Override
                 public void onLeScan(final BluetoothDevice device, final int rssi, final byte[] scanRecord) {
                     //filter outlier beacons
-                    if (is_Beacon(scanRecord) && rssi > FILTER_MIN) {
+                    if (is_Beacon(scanRecord) && rssi > AppConfig.get_bt_mon_filter_min()) {
                         //update beacons
                         MainActivity.beaconKeeper.async_updateBeacon(device.getAddress().replace(":", ""),rssi);
                     }

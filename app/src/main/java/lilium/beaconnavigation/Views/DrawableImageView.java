@@ -13,6 +13,7 @@ import android.graphics.drawable.Drawable;
 import android.util.AttributeSet;
 
 //https://github.com/davemorrissey/subsampling-scale-image-view
+import com.davemorrissey.labs.subscaleview.ImageSource;
 import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView;
 import java.util.ArrayList;
 import java.util.List;
@@ -28,9 +29,8 @@ import static lilium.beaconnavigation.MainActivity.mapWidthSeekBar;
 public class DrawableImageView extends SubsamplingScaleImageView {
     Bitmap b = BitmapFactory.decodeResource(getResources(), R.mipmap.beacon);
     Bitmap marker = BitmapFactory.decodeResource(getResources(), R.mipmap.marker);
+    int[][] wallPixelPositions;
     Paint p = new Paint();
-//    final float map_width=155;
-//    final float map_height=137;
     List<Location> path;
 
     public DrawableImageView(Context context, AttributeSet attr) {
@@ -49,12 +49,22 @@ public class DrawableImageView extends SubsamplingScaleImageView {
         float map_width = mapWidthSeekBar.getProgress();
         float map_height = mapHeightSeekBar.getProgress();
 
-        float x=(width*MainActivity.position.x/map_width);
-        float y=(height*MainActivity.position.y/map_height);
+        float myLocationX=(width*MainActivity.position.x/map_width);
+        float myLocationY=(height*MainActivity.position.y/map_height);
 
         Paint p=new Paint();
         p.setColor(Color.BLUE);
-        canvas.drawCircle(x,y,10,p);
+
+        for(int x = 0; x < wallPixelPositions.length; x++)
+        {
+            for(int y = 0; y < wallPixelPositions[x].length; y++)
+            {
+                canvas.drawPoint(x,y,p);
+            }
+        }
+
+
+        canvas.drawCircle(myLocationX,myLocationY,10,p);
 
         if(path!=null){
             Location prev=path.get(0);
@@ -121,6 +131,11 @@ public class DrawableImageView extends SubsamplingScaleImageView {
         }
     }
 
+    public void setImage(ImageSource image, int[][] wallPixelPositions)
+    {
+        super.setImage(image);
+        this.wallPixelPositions = wallPixelPositions;
+    }
     public void setPath(List<Location> path){
         this.path=path;
     }

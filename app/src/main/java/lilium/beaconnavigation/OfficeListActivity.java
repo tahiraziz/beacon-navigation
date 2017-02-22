@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 
 import lilium.beaconnavigation.Classes.Office;
+import lilium.beaconnavigation.Services.DBManager;
 
 public class OfficeListActivity extends ListActivity {
     private ListView listView;

@@ -26,6 +26,9 @@ public class RssiAveragingBeacon implements Beacon {
     }
 
     @Override
+    public Queue<Integer> getRssiQueue(){return rssiQueue;}
+
+    @Override
     public boolean equals(Object obj) {
         if (obj == null || !RssiAveragingBeacon.class.isAssignableFrom(obj.getClass())) return false;
         return ((RssiAveragingBeacon) obj).mac.equals(mac);

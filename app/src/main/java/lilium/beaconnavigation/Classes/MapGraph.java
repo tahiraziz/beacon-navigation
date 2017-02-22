@@ -11,7 +11,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
 
-import lilium.beaconnavigation.DBManager;
+import lilium.beaconnavigation.Services.DBManager;
 
 /**
  * Created by Xia on 11/29/2016.

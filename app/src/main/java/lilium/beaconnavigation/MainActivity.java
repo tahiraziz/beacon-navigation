@@ -10,13 +10,11 @@ import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.PointF;
-import android.graphics.drawable.BitmapDrawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.support.design.widget.Snackbar;
-import android.support.v4.content.res.ResourcesCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.AppCompatTextView;
 import android.view.MotionEvent;
@@ -32,10 +30,10 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.davemorrissey.labs.subscaleview.ImageSource;
-import com.davemorrissey.labs.subscaleview.ImageViewState;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Queue;
 
 import lilium.beaconnavigation.Classes.Location;
 import lilium.beaconnavigation.Classes.MapGraph;
@@ -48,7 +46,10 @@ import lilium.beaconnavigation.Implementations.StandardBluetoothMonitor;
 import lilium.beaconnavigation.Interfaces.Beacon;
 import lilium.beaconnavigation.Interfaces.BeaconKeeper;
 import lilium.beaconnavigation.Interfaces.BluetoothMonitor;
+import lilium.beaconnavigation.Interfaces.ImageProcessingService;
 import lilium.beaconnavigation.Interfaces.PositionUpdater;
+import lilium.beaconnavigation.Services.BasicImageProcessingService;
+import lilium.beaconnavigation.Services.DBManager;
 import lilium.beaconnavigation.Views.DrawableImageView;
 
 public class MainActivity extends AppCompatActivity {
@@ -252,7 +253,12 @@ public class MainActivity extends AppCompatActivity {
 
         Bitmap mapImage = BitmapFactory.decodeResource(getResources(), R.drawable.map, opts);
 
-        map.setImage(ImageSource.bitmap(mapImage));
+        ImageProcessingService imageProcessingService = new BasicImageProcessingService();
+
+        int[][] wallPixelPositions = imageProcessingService.DeduceWallPxPositions(mapImage);
+
+        //Set image and wall pixel postions int he DrawableImageView (custom setImage method)
+        map.setImage(ImageSource.bitmap(mapImage),wallPixelPositions);
 
         //build DB
         mapGraph = new MapGraph(dbManager);
@@ -299,6 +305,30 @@ public class MainActivity extends AppCompatActivity {
         //Initialize the "BluetoothMonitor" object and start it
         btMonitor = new StandardBluetoothMonitor();
         btMonitor.start();
+//
+//        //Send toast messages with rssi strengths:
+//        Context context = getApplicationContext();
+//        String text;
+//        int duration = Toast.LENGTH_LONG, i=0;
+//        Queue<Integer> rssiQueue=beaconHolder.getRssiQueue();
+//        ArrayList<Integer> rssiList=new ArrayList();
+//        while(rssiQueue.peek()!=null)
+//        {
+//            rssiList.add(i,rssiQueue.remove());
+//            i++;
+//        }
+//
+//        text="";
+//        long time=0;
+//
+//        for(int j=0; j<rssiList.size(); j++)S
+//        {
+//            time= System.currentTimeMillis();
+//            text+="RSSI Strengths: "+rssiList.get(j)+time+"\n";
+//        }
+//
+//        Toast toast = Toast.makeText(context, text, duration);
+//        toast.show();
 
         //Get a reference to the ImageView called newBeaconMarker from the main app view
         newBeaconMarker = (ImageView) findViewById(R.id.newBeaconMarker);

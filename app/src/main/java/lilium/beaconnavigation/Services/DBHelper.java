@@ -1,4 +1,4 @@
-package lilium.beaconnavigation;
+package lilium.beaconnavigation.Services;
 
 import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;

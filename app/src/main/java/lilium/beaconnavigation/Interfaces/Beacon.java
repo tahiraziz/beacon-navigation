@@ -1,6 +1,8 @@
 package lilium.beaconnavigation.Interfaces;
 
 
+import java.util.Queue;
+
 /**
  * Created by boylec on 1/29/17.
  */
@@ -11,7 +13,7 @@ public interface Beacon {
     float getY();
     long getLastUpdate();
     int getRssi();
-
+    Queue<Integer> getRssiQueue();
     void setMac(String mac);
     void setX(float x);
     void setY(float y);

@@ -32,14 +32,12 @@ public class AppConfig {
         return _sharedPrefs.getInt("MAXIMUM_QUIET",1300);
     }
 
+    public static int get_map_width_constant(){ return _sharedPrefs.getInt("MAP_WIDTH_CONSTANT", 137);}
+
+    public static int get_map_height_constant(){ return _sharedPrefs.getInt("MAP_HEIGHT_CONSTANT", 155);}
+
     public static int get_minimium_position_delay(){
         return _sharedPrefs.getInt("MINIMUM_POSITION_DELAY",200);
-    }
-
-
-
-    public static String get_last_map_filename() {
-        return _sharedPrefs.getString("LAST_MAP",null);
     }
 
     public static void set_trilateration_epsilon(double epsilon)
@@ -79,6 +77,16 @@ public class AppConfig {
     public static void set_last_map_filename(String lastMapFileName)
     {
         PutString("LAST_MAP",lastMapFileName);
+    }
+
+    public static void set_map_width_constant(int w)
+    {
+        PutInt("MAP_WIDTH_CONSTANT",w);
+    }
+
+    public static void set_map_height_constant(int h)
+    {
+        PutInt("MAP_HEIGHT_CONSTANT",h);
     }
 
     public static void PutBool(String key, boolean value)

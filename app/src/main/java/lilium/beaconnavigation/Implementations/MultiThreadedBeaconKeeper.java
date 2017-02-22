@@ -5,6 +5,7 @@ import android.util.Log;
 import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import lilium.beaconnavigation.AppConfig;
 import lilium.beaconnavigation.Interfaces.Beacon;
 import lilium.beaconnavigation.Interfaces.BeaconKeeper;
 import lilium.beaconnavigation.MainActivity;
@@ -14,7 +15,6 @@ import static java.lang.Math.pow;
 //Keeps track of beacon RSSIs that have been "placed" on a thread that runs the "Watchdog" private class
 public class MultiThreadedBeaconKeeper implements BeaconKeeper {
 
-    private long destroyBeaconTime;
     private ArrayList<Beacon> placedBeacons;
     private ArrayList<Beacon> unplacedBeacons;
     private Thread beaconWatchdog;
@@ -65,11 +65,10 @@ public class MultiThreadedBeaconKeeper implements BeaconKeeper {
     }
 
     //Constructor for beacon keeper... starts a new thread that runs the Watchdog class
-    public MultiThreadedBeaconKeeper(long DestroyBeaconTime) {
+    public MultiThreadedBeaconKeeper() {
         stop = new AtomicBoolean();
         placedBeacons = new ArrayList<>();
         unplacedBeacons = new ArrayList<>();
-        destroyBeaconTime = DestroyBeaconTime;
         beaconWatchdog = new Thread(new Watchdog(),"Watchdog");
         beaconWatchdog.start(); //TODO Turn back on
     }
@@ -84,7 +83,7 @@ public class MultiThreadedBeaconKeeper implements BeaconKeeper {
                     synchronized (placedBeacons) {
                         long currentTimeMs = System.currentTimeMillis();
                         for (int i = 0; i < placedBeacons.size(); i++) {
-                            if (currentTimeMs - placedBeacons.get(i).getLastUpdate() > destroyBeaconTime) {
+                            if (currentTimeMs - placedBeacons.get(i).getLastUpdate() > AppConfig.get_maximum_quiet()) {
                                 placedBeacons.remove(i);
                                 i--;
                             }
@@ -93,7 +92,7 @@ public class MultiThreadedBeaconKeeper implements BeaconKeeper {
                     synchronized (unplacedBeacons) {
                         for (int i = 0; i < unplacedBeacons.size(); i++) {
                             long currentTimeMs = System.currentTimeMillis();
-                            if (currentTimeMs - unplacedBeacons.get(i).getLastUpdate() > destroyBeaconTime) {
+                            if (currentTimeMs - unplacedBeacons.get(i).getLastUpdate() > AppConfig.get_maximum_quiet()) {
                                 unplacedBeacons.remove(i);
                                 i--;
                             }
@@ -101,7 +100,7 @@ public class MultiThreadedBeaconKeeper implements BeaconKeeper {
                     }
                 }
                 try {
-                    Thread.sleep(destroyBeaconTime + 100);
+                    Thread.sleep(AppConfig.get_maximum_quiet() + 100);
                 } catch (InterruptedException e) {
                     Log.e("Thread: ".concat(Thread.currentThread().getName()), "Interrupted Exception");
                     e.printStackTrace();

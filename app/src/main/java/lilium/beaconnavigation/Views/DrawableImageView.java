@@ -18,13 +18,11 @@ import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView;
 import java.util.ArrayList;
 import java.util.List;
 
+import lilium.beaconnavigation.AppConfig;
 import lilium.beaconnavigation.Classes.Location;
 import lilium.beaconnavigation.Interfaces.Beacon;
 import lilium.beaconnavigation.MainActivity;
 import lilium.beaconnavigation.R;
-
-import static lilium.beaconnavigation.MainActivity.mapHeightSeekBar;
-import static lilium.beaconnavigation.MainActivity.mapWidthSeekBar;
 
 public class DrawableImageView extends SubsamplingScaleImageView {
     Bitmap b = BitmapFactory.decodeResource(getResources(), R.mipmap.beacon);
@@ -39,6 +37,9 @@ public class DrawableImageView extends SubsamplingScaleImageView {
 
     @Override
     protected void onDraw(Canvas canvas) {
+        int mapWidthConstant = AppConfig.get_map_width_constant();
+        int mapHeightConstant = AppConfig.get_map_height_constant();
+
         super.onDraw(canvas);
         if(!MainActivity.loaded) return;
 
@@ -74,11 +75,11 @@ public class DrawableImageView extends SubsamplingScaleImageView {
             if (path != null && path.size() >= 2) {
                 Path vPath = new Path();
 
-                PointF vPrev = sourceToViewCoord(width* path.get(0).x/map_width, height*path.get(0).y/map_height);
+                PointF vPrev = sourceToViewCoord(width* path.get(0).x/mapWidthConstant, height*path.get(0).y/mapHeightConstant);
 
                 vPath.moveTo(vPrev.x, vPrev.y);
                 for (int i = 1; i < path.size(); i++) {
-                    PointF vPoint = sourceToViewCoord(path.get(i).x*width/map_width, path.get(i).y*height/map_height);
+                    PointF vPoint = sourceToViewCoord(path.get(i).x*width/mapWidthConstant, path.get(i).y*height/mapHeightConstant);
 
                     vPath.lineTo(vPoint.x,vPoint.y);
                     vPrev = vPoint;

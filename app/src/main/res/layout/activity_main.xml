@@ -52,64 +52,41 @@
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
         android:layout_alignParentStart="true"
-        android:orientation="vertical"
-        android:background="@color/colorPrimaryDark">
-<TextView
-    android:id="@+id/mapdimenstext"
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:textAlignment="center"
-    android:background="@color/colorAccent"/>
+        android:background="@color/colorPrimaryDark"
+        android:gravity="center_horizontal">
 
-        <SeekBar
-            android:id="@+id/mapwidth"
-            android:layout_width="fill_parent"
+        <ImageButton
+            android:id="@+id/AddBeaconButton"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:max="200"
-            android:progress="137"
-            android:layout_marginBottom="10dp"
-            ></SeekBar>
-        <SeekBar
-            android:id="@+id/mapheight"
-            android:layout_width="fill_parent"
+            app:srcCompat="@android:drawable/ic_menu_add" />
+
+        <ImageButton
+            android:id="@+id/RemoveBeaconButton"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:max="200"
-            android:progress="155"
-            android:layout_marginBottom="10dp"
-            ></SeekBar>
-        <LinearLayout
-            android:layout_width="fill_parent"
+            app:srcCompat="@android:drawable/ic_menu_delete" />
+
+        <ImageButton
+            android:id="@+id/WipeBeaconsButton"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:background="@color/colorPrimaryDark"
-            android:gravity="center_horizontal">
+            app:srcCompat="@android:drawable/ic_menu_rotate" />
 
-            <ImageButton
-                android:id="@+id/AddBeaconButton"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                app:srcCompat="@android:drawable/ic_menu_add" />
-
-            <ImageButton
-                android:id="@+id/RemoveBeaconButton"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                app:srcCompat="@android:drawable/ic_menu_delete" />
-
-            <ImageButton
-                android:id="@+id/WipeBeaconsButton"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                app:srcCompat="@android:drawable/ic_menu_rotate" />
-        </LinearLayout>
+        <ImageButton
+            android:id="@+id/AppConfigButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:srcCompat="@android:drawable/ic_menu_agenda" />
     </LinearLayout>
 
     <FrameLayout
         android:id="@+id/MainFrame"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_above="@+id/linearLayout"
         android:layout_alignParentStart="true"
         android:layout_below="@+id/getroute">
+
 
         <lilium.beaconnavigation.Views.DrawableImageView
             android:id="@+id/map"
@@ -131,21 +108,108 @@
             android:layout_height="wrap_content"
             android:background="@android:color/white"
             android:visibility="gone" />
+
+        <LinearLayout
+            android:id="@+id/appConfigView"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:background="@android:color/background_light"
+            android:orientation="vertical"
+            android:gravity="center_vertical"
+            android:padding="10dp"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/config_layout_title"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="CONFIG"
+                android:textAlignment="center"
+                android:textAllCaps="true" />
+
+            <lilium.beaconnavigation.Views.TextOverlaySeekBar
+                android:id="@+id/config_mapwidth"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:background="@color/colorPrimaryDark"
+                app:seekbarMin="100"
+                app:seekbarMax="200"
+                app:progressWildCard="%p"
+                app:template="Map Width Constant: %p" />
+
+            <lilium.beaconnavigation.Views.TextOverlaySeekBar
+                android:id="@+id/config_mapheight"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:background="@color/colorPrimaryDark"
+                app:seekbarMin="100"
+                app:seekbarMax="200"
+                app:progressWildCard="%p"
+                app:template="Map Height Constant: %p" />
+
+
+            <!--Progress of 36 on this one equates to -84 db-->
+            <lilium.beaconnavigation.Views.TextOverlaySeekBar
+                android:id="@+id/config_monitor_filter_min"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:background="@color/colorPrimaryDark"
+                app:seekbarMin="-120"
+                app:seekbarMax="-30"
+                app:progressWildCard="%p"
+                app:template="Bluetooth Adv. dB Filter: %p" />
+
+            <lilium.beaconnavigation.Views.TextOverlaySeekBar
+                android:id="@+id/config_advert_queue_max_length"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:background="@color/colorPrimaryDark"
+                app:seekbarMin="1"
+                app:seekbarMax="2000"
+                app:progressWildCard="%p"
+                app:template="Bluetooth Adv. Queue Max Length: %p" />
+
+            <lilium.beaconnavigation.Views.TextOverlaySeekBar
+                android:id="@+id/config_solver_max_iterations"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:background="@color/colorPrimaryDark"
+                app:seekbarMin="2"
+                app:seekbarMax="100000"
+                app:progressWildCard="%p"
+                app:template="Trilat. Solver Max Iterations: %p" />
+
+
+            <lilium.beaconnavigation.Views.TextOverlaySeekBar
+                android:id="@+id/config_max_quiet"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:background="@color/colorPrimaryDark"
+                app:seekbarMin="0"
+                app:seekbarMax="10000"
+                app:progressWildCard="%p"
+                app:template="Max Beacon Silence (ms): %p" />
+
+            <lilium.beaconnavigation.Views.TextOverlaySeekBar
+                android:id="@+id/config_min_position_delay"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:background="@color/colorPrimaryDark"
+                app:seekbarMin="0"
+                app:seekbarMax="10000"
+                app:progressWildCard="%p"
+                app:template="Min Position Update Delay (ms): %p" />
+
+
+            <lilium.beaconnavigation.Views.TextOverlaySeekBar
+                android:id="@+id/config_max_spawn_wait"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:background="@color/colorPrimaryDark"
+                app:seekbarMin="0"
+                app:seekbarMax="10000"
+                app:progressWildCard="%p"
+                app:template="Max Position Update Delay (ms): %p" />
+        </LinearLayout>
     </FrameLayout>
 </RelativeLayout>
-
-    <!--<?xml version="1.0" encoding="utf-8"?>--><!--<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"--><!--xmlns:app="http://schemas.android.com/apk/res-auto"--><!--xmlns:tools="http://schemas.android.com/tools"--><!--android:layout_width="match_parent"--><!--android:layout_height="match_parent"--><!--tools:context="lilium.beaconnavigation.MainActivity">-->
-
-    <!--<LinearLayout--><!--android:layout_width="match_parent"--><!--android:layout_height="match_parent"--><!--android:orientation="vertical">-->
-
-    <!--<RelativeLayout--><!--android:id="@+id/activity_main"--><!--android:layout_width="match_parent"--><!--android:layout_height="79dp">--><!--&lt;!&ndash;android:paddingBottom="@dimen/activity_vertical_margin"&ndash;&gt;--><!--&lt;!&ndash;android:paddingLeft="@dimen/activity_horizontal_margin"&ndash;&gt;--><!--&lt;!&ndash;android:paddingRight="@dimen/activity_horizontal_margin"&ndash;&gt;--><!--&lt;!&ndash;android:paddingTop="@dimen/activity_vertical_margin"&ndash;&gt;--><!--<TextView--><!--android:text="Destination"--><!--android:id="@+id/des"--><!--android:layout_height="wrap_content"--><!--android:layout_width="wrap_content"--><!--android:layout_alignParentTop="true"--><!--android:layout_alignParentLeft="true"/>-->
-
-    <!--<Spinner--><!--android:id="@+id/rooms"--><!--android:layout_width="wrap_content"--><!--android:layout_height="wrap_content"--><!--android:layout_alignParentTop="true"--><!--android:layout_toRightOf="@+id/des"--><!--android:layout_toEndOf="@+id/des"--><!--android:layout_marginLeft="@dimen/activity_horizontal_margin"></Spinner>--><!--<TextView--><!--android:text=""--><!--android:layout_width="wrap_content"--><!--android:layout_height="wrap_content"--><!--android:layout_below="@+id/getroute"--><!--android:layout_alignParentLeft="true"--><!--android:layout_marginTop="33dp"--><!--android:id="@+id/direction" />--><!--<Button--><!--android:id="@+id/getroute"--><!--android:layout_width="wrap_content"--><!--android:layout_height="wrap_content"--><!--android:text="Route"--><!--android:onClick="getRoute"--><!--android:layout_below="@+id/rooms"--><!--android:layout_toEndOf="@+id/rooms" />--><!--</RelativeLayout>-->
-
-    <!--<FrameLayout--><!--android:layout_width="match_parent"--><!--android:layout_height="0dp"--><!--android:layout_weight="1"--><!--android:adjustViewBounds="true"--><!--android:scaleType="centerInside"--><!--android:background="@android:color/black"--><!--android:id="@+id/MainFrame">-->
-
-    <!--<ImageView--><!--android:layout_width="wrap_content"--><!--android:layout_height="wrap_content"--><!--app:srcCompat="@mipmap/newbeacon"--><!--android:id="@+id/newBeaconMarker"--><!--android:adjustViewBounds="false"--><!--tools:visibility="invisible" />-->
-
-    <!--<lilium.beaconnavigation.Views.kludgeListView--><!--android:layout_width="wrap_content"--><!--android:layout_height="wrap_content"--><!--android:id="@+id/beaconListView"--><!--android:visibility="gone"--><!--android:background="@android:color/white" />-->
-
-    <!--<lilium.beaconnavigation.Views.DrawableImageView--><!--android:layout_width="match_parent"--><!--android:layout_height="match_parent"--><!--android:adjustViewBounds="true"--><!--android:scaleType="centerInside"--><!--android:id="@+id/map"/>--><!--</FrameLayout>--><!--<LinearLayout--><!--android:layout_width="fill_parent"--><!--android:layout_height="wrap_content"--><!--android:gravity="center_horizontal"--><!--android:background="@color/colorPrimaryDark">--><!--<ImageButton--><!--android:layout_width="wrap_content"--><!--android:layout_height="wrap_content"--><!--android:id="@+id/AddBeaconButton"--><!--app:srcCompat="@android:drawable/ic_menu_add" />--><!--<ImageButton--><!--android:layout_width="wrap_content"--><!--android:layout_height="wrap_content"--><!--android:id="@+id/RemoveBeaconButton"--><!--app:srcCompat="@android:drawable/ic_menu_delete" />--><!--<ImageButton--><!--android:layout_width="wrap_content"--><!--android:layout_height="wrap_content"--><!--android:id="@+id/WipeBeaconsButton"--><!--app:srcCompat="@android:drawable/ic_menu_rotate"/>--><!--&lt;!&ndash;<ImageButton&ndash;&gt;--><!--&lt;!&ndash;android:layout_width="wrap_content"&ndash;&gt;--><!--&lt;!&ndash;android:layout_height="wrap_content"&ndash;&gt;--><!--&lt;!&ndash;android:id="@+id/OpenMapButton"&ndash;&gt;--><!--&lt;!&ndash;app:srcCompat="@android:drawable/ic_menu_mapmode"/>&ndash;&gt;--><!--&lt;!&ndash;<ImageButton&ndash;&gt;--><!--&lt;!&ndash;android:layout_width="wrap_content"&ndash;&gt;--><!--&lt;!&ndash;android:layout_height="wrap_content"&ndash;&gt;--><!--&lt;!&ndash;android:id="@+id/LoadMapButton"&ndash;&gt;--><!--&lt;!&ndash;app:srcCompat="@android:drawable/ic_menu_set_as"/>&ndash;&gt;--><!--&lt;!&ndash;<ImageButton&ndash;&gt;--><!--&lt;!&ndash;android:layout_width="wrap_content"&ndash;&gt;--><!--&lt;!&ndash;android:layout_height="wrap_content"&ndash;&gt;--><!--&lt;!&ndash;android:id="@+id/DeleteMapButton"&ndash;&gt;--><!--&lt;!&ndash;app:srcCompat="@android:drawable/ic_menu_close_clear_cancel"/>&ndash;&gt;--><!--</LinearLayout>--><!--</LinearLayout>--><!--</LinearLayout>-->

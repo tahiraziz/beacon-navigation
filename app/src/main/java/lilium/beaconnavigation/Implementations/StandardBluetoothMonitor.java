@@ -74,11 +74,13 @@ public class StandardBluetoothMonitor implements BluetoothMonitor{
 
     //This is called to start the monitoring
     public void start(){
-        if (Build.VERSION.SDK_INT >= 21) {
-            MainActivity.btAdapter.getBluetoothLeScanner().startScan(filters, settings, scanCallback);
-        } else {
-            //device discovery for API level 18-20, this is very slow
-            MainActivity.btAdapter.startLeScan(deprecated_scanCallback);
+        if(MainActivity.btAdapter != null) {
+            if (Build.VERSION.SDK_INT >= 21) {
+                MainActivity.btAdapter.getBluetoothLeScanner().startScan(filters, settings, scanCallback);
+            } else {
+                //device discovery for API level 18-20, this is very slow
+                MainActivity.btAdapter.startLeScan(deprecated_scanCallback);
+            }
         }
     }
 }

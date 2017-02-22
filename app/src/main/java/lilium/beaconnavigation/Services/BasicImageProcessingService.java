@@ -4,8 +4,8 @@ import android.graphics.Bitmap;
 import android.graphics.Color;
 
 import java.util.ArrayList;
-import java.util.List;
 
+import lilium.beaconnavigation.Classes.ImageProcessingData;
 import lilium.beaconnavigation.Interfaces.ImageProcessingService;
 
 /**
@@ -16,9 +16,10 @@ public class BasicImageProcessingService implements ImageProcessingService {
 
     private final static float _wallCutoff = (float)255/2;
 
-    public int[][] DeduceWallPxPositions(Bitmap image)
+    public ImageProcessingData DeduceWallPxPositions(Bitmap image)
     {
-        ArrayList<int[]> wallPositions = new ArrayList<>();
+        ArrayList<Integer[]> wallPositions = new ArrayList<>();
+        Bitmap filteredBitmap = image;
 
         for (int x = 0; x < image.getWidth(); x++)
         {
@@ -26,22 +27,38 @@ public class BasicImageProcessingService implements ImageProcessingService {
             {
                 // Get the color of a pixel within myBitmap.
                 int px = image.getPixel(x, y);
-                int[] pxColor = getRgb(px,image.hasAlpha());
 
-                if(isWall(pxColor))
+//                int[] pxColor = getRgb(px,image.hasAlpha());
+//
+//                if(isWall(pxColor))
+//                {
+//                    wallPositions.add(new Integer[]{x,y});
+//                    filteredBitmap.setPixel(x,y,Color.RED);
+//                }
+
+                if(isWall(px))
                 {
-                       wallPositions.add(new int[]{x,y});
+                    wallPositions.add(new Integer[]{x,y});
+                    filteredBitmap.setPixel(x,y,Color.RED);
                 }
             }
         }
 
-        return (int[][])wallPositions.toArray();
+        ImageProcessingData result = new ImageProcessingData();
+        result.WallPositions = wallPositions.toArray(new Integer[wallPositions.size()][]);
+        result.FilteredBitmap = filteredBitmap;
+        return result;
+    }
+
+    private static boolean isWall(int px)
+    {
+        return Color.MAGENTA == px;
     }
 
     private static boolean isWall(int[] pxColor)
     {
         float avgColor = getAverage(new int[]{pxColor[0],pxColor[1],pxColor[2]});
-        return avgColor >= _wallCutoff;
+        return avgColor <= _wallCutoff;
     }
 
 
@@ -61,18 +78,17 @@ public class BasicImageProcessingService implements ImageProcessingService {
         if(hasAlpha)
         {
             return new int[]{
-                    (px >> 16) & 0xff, //red
-                    (px >> 8) & 0xff, //green
-                    (px) & 0xff,  //blue
-                    (px >> 24) & 0xff, //alpha
-
+                    Color.red(px),
+                    Color.green(px),
+                    Color.blue(px),
+                    Color.alpha(px)
             };
         }
         else{
             return new int[]{
-                    (px >> 16) & 0xff, //red
-                    (px >> 8) & 0xff, //green
-                    (px) & 0xff  //blue
+                    Color.red(px),
+                    Color.green(px),
+                    Color.blue(px),
             };
         }
     }

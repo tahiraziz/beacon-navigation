@@ -9,10 +9,8 @@ import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.PointF;
-import android.graphics.drawable.Drawable;
 import android.util.AttributeSet;
 
-//https://github.com/davemorrissey/subsampling-scale-image-view
 import com.davemorrissey.labs.subscaleview.ImageSource;
 import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView;
 import java.util.ArrayList;
@@ -27,7 +25,7 @@ import lilium.beaconnavigation.R;
 public class DrawableImageView extends SubsamplingScaleImageView {
     Bitmap b = BitmapFactory.decodeResource(getResources(), R.mipmap.beacon);
     Bitmap marker = BitmapFactory.decodeResource(getResources(), R.mipmap.marker);
-    int[][] wallPixelPositions;
+
     Paint p = new Paint();
     List<Location> path;
 
@@ -47,25 +45,10 @@ public class DrawableImageView extends SubsamplingScaleImageView {
         int height = this.getMeasuredHeight();
         int width = this.getMeasuredWidth();
 
-        float map_width = mapWidthSeekBar.getProgress();
-        float map_height = mapHeightSeekBar.getProgress();
-
-        float myLocationX=(width*MainActivity.position.x/map_width);
-        float myLocationY=(height*MainActivity.position.y/map_height);
+//        float myLocationX=(width*MainActivity.position.x/mapWidthConstant);
+//        float myLocationY=(height*MainActivity.position.y/mapHeightConstant);
 
         Paint p=new Paint();
-        p.setColor(Color.BLUE);
-
-        for(int x = 0; x < wallPixelPositions.length; x++)
-        {
-            for(int y = 0; y < wallPixelPositions[x].length; y++)
-            {
-                canvas.drawPoint(x,y,p);
-            }
-        }
-
-
-        canvas.drawCircle(myLocationX,myLocationY,10,p);
 
         if(path!=null){
             Location prev=path.get(0);
@@ -94,21 +77,6 @@ public class DrawableImageView extends SubsamplingScaleImageView {
                 p.setColor(Color.argb(175, 51, 181, 229));
                 canvas.drawPath(vPath, p);
             }
-//            for(int i=1;i<path.size();i++){
-//                Location cur=path.get(i);
-//
-//                PointF startLinePos = new PointF (width*prev.x/map_width,height*prev.y/map_height);
-//                PointF endLinePos = new PointF (width*cur.x/map_width, height*cur.y/map_height);
-//
-//                startLinePos = sourceToViewCoord(startLinePos);
-//                endLinePos = sourceToViewCoord(endLinePos);
-//
-//                canvas.drawLine(startLinePos.x,startLinePos.y,endLinePos.x,endLinePos.y,p);
-//
-//                prev=cur;
-//            }
-
-//            path=null;
         }
 
         //End walking nav stuff
@@ -132,11 +100,6 @@ public class DrawableImageView extends SubsamplingScaleImageView {
         }
     }
 
-    public void setImage(ImageSource image, int[][] wallPixelPositions)
-    {
-        super.setImage(image);
-        this.wallPixelPositions = wallPixelPositions;
-    }
     public void setPath(List<Location> path){
         this.path=path;
     }

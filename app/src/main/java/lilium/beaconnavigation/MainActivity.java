@@ -39,6 +39,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
 
+import lilium.beaconnavigation.Classes.ImageProcessingData;
 import lilium.beaconnavigation.Classes.Location;
 import lilium.beaconnavigation.Classes.MapGraph;
 import lilium.beaconnavigation.Classes.Room;
@@ -168,7 +169,7 @@ public class MainActivity extends AppCompatActivity {
         btAdapter = btManager.getAdapter();
 
 
-        if (!btAdapter.isEnabled()) {
+        if (btAdapter != null && !btAdapter.isEnabled()) {
             //Once we get our adapter, we need to enable the adapter
             Intent enableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
             startActivityForResult(enableIntent, 1);
@@ -284,10 +285,10 @@ public class MainActivity extends AppCompatActivity {
 
         ImageProcessingService imageProcessingService = new BasicImageProcessingService();
 
-        int[][] wallPixelPositions = imageProcessingService.DeduceWallPxPositions(mapImage);
+        ImageProcessingData imageData = imageProcessingService.DeduceWallPxPositions(mapImage);
 
         //Set image and wall pixel postions int he DrawableImageView (custom setImage method)
-        map.setImage(ImageSource.bitmap(mapImage),wallPixelPositions);
+        map.setImage(ImageSource.bitmap(imageData.FilteredBitmap));
 
         //build DB
         mapGraph = new MapGraph(dbManager);

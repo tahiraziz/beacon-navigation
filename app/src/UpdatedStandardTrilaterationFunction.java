@@ -16,7 +16,7 @@ import lilium.beaconnavigation.Interfaces.TrilaterationFunction;
  * @author Alejandro
  *
  */
-public class StandardTrilaterationFunction implements TrilaterationFunction
+public class UpdatedStandardTrilaterationFunction implements TrilaterationFunction
 {
     protected final double[] distance;          //holds distance values gained from rssi
     protected final double[][] positions;       //holds x,y coordinates of beacons
@@ -31,7 +31,7 @@ public class StandardTrilaterationFunction implements TrilaterationFunction
     double Y;
     double LowerDeterminant;
 
-    public StandardTrilaterationFunction(double positions[][], double distances[])
+    public UpdatedStandardTrilaterationFunction(double positions[][], double distances[])
     {
         if(positions.length < 3)
         {

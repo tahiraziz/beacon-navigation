@@ -15,6 +15,7 @@ import com.davemorrissey.labs.subscaleview.ImageSource;
 import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Queue;
 
 import lilium.beaconnavigation.AppConfig;
 import lilium.beaconnavigation.Classes.Location;
@@ -25,7 +26,7 @@ import lilium.beaconnavigation.R;
 public class DrawableImageView extends SubsamplingScaleImageView {
     Bitmap b = BitmapFactory.decodeResource(getResources(), R.mipmap.beacon);
     Bitmap marker = BitmapFactory.decodeResource(getResources(), R.mipmap.marker);
-
+    Beacon beaconToMonitor = null;
     Paint p = new Paint();
     List<Location> path;
 
@@ -39,16 +40,14 @@ public class DrawableImageView extends SubsamplingScaleImageView {
         int mapHeightConstant = AppConfig.get_map_height_constant();
 
         super.onDraw(canvas);
+
         if(!MainActivity.loaded) return;
+
+        Paint p=new Paint();
 
         //Walking nav stuff
         int height = this.getMeasuredHeight();
         int width = this.getMeasuredWidth();
-
-//        float myLocationX=(width*MainActivity.position.x/mapWidthConstant);
-//        float myLocationY=(height*MainActivity.position.y/mapHeightConstant);
-
-        Paint p=new Paint();
 
         if(path!=null){
             Location prev=path.get(0);
@@ -99,6 +98,7 @@ public class DrawableImageView extends SubsamplingScaleImageView {
             canvas.drawBitmap(marker, matrix, p);
         }
     }
+
 
     public void setPath(List<Location> path){
         this.path=path;

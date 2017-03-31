@@ -18,6 +18,19 @@ public class kludgeListView extends ListView {
     }
 
     @Override
+    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec)
+    {
+        try{
+            super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+        }
+        catch(IndexOutOfBoundsException ex)
+        {
+            super.onMeasure(widthMeasureSpec,heightMeasureSpec);
+        }
+
+    }
+
+    @Override
     protected void layoutChildren() {
         try {
             super.layoutChildren();

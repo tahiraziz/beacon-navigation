@@ -1,6 +1,7 @@
 package lilium.beaconnavigation.Implementations;
 
 import android.os.AsyncTask;
+import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -13,13 +14,12 @@ import lilium.beaconnavigation.MainActivity;
 import static java.lang.Math.pow;
 
 //Keeps track of beacon RSSIs that have been "placed" on a thread that runs the "Watchdog" private class
-public class MultiThreadedBeaconKeeper implements BeaconKeeper {
+public class MultiThreadedBeaconKeeper extends AppCompatActivity implements BeaconKeeper {
 
     private ArrayList<Beacon> placedBeacons;
     private ArrayList<Beacon> unplacedBeacons;
     private Thread beaconWatchdog;
     private AtomicBoolean stop;
-
 
     public void stop() {
         stop.set(true);
@@ -98,6 +98,16 @@ public class MultiThreadedBeaconKeeper implements BeaconKeeper {
                             }
                         }
                     }
+
+                    if(MainActivity.beaconToMonitor == null && placedBeacons.size() == 1)
+                    {
+                        ArrayList<Beacon> cloned = clonePlaced();
+                        MainActivity.beaconToMonitor = cloned.get(0);
+                    }
+                    if(MainActivity.beaconToMonitor != null && placedBeacons.size() != 1)
+                    {
+                        MainActivity.beaconToMonitor = null;
+                    }
                 }
                 try {
                     Thread.sleep(AppConfig.get_maximum_quiet() + 100);
@@ -108,6 +118,8 @@ public class MultiThreadedBeaconKeeper implements BeaconKeeper {
             }
         }
     }
+
+
 
     public void async_updateBeacon(String mac, int rssi) {
         new BeaconUpdate().execute(new BeaconUpdateArgs(mac, rssi));
@@ -146,6 +158,17 @@ public class MultiThreadedBeaconKeeper implements BeaconKeeper {
                         b = placedBeacons.indexOf(beacon);
                         placedBeacons.set(b, beacon);
                     }
+                }
+
+                final String beaconMac = beacon.getMac();
+
+                if(MainActivity.beaconToMonitor != null && MainActivity.beaconToMonitor.getMac() == beaconMac)
+                {
+                    runOnUiThread(new Runnable(){
+                        public void run(){
+                            MainActivity.rssiMonitorLabel.invalidate();
+                        }
+                    });
                 }
             }
         } else {

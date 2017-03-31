@@ -86,13 +86,16 @@ public class MainActivity extends AppCompatActivity {
     public static ArrayAdapter<Beacon> beaconArrayAdapter;
     public static DBManager dbManager;
 
+
     //Library
     public static DrawableImageView map;
 
     public static PointF position = new PointF(0, 0);
     public static ArrayList<String> availableDbFilePaths;
-
+    public static TextView rssiMonitorLabel;
     public static boolean loaded = false;
+
+    public static Beacon beaconToMonitor;
 
     public MainActivity() {
     }
@@ -206,6 +209,8 @@ public class MainActivity extends AppCompatActivity {
 
         //Walking navigator init
         rooms = (Spinner) findViewById(R.id.rooms);
+
+        rssiMonitorLabel = (TextView)findViewById(R.id.rssiAdvMonitorLabel);
 
         //Text box and two sliders to tweak the map width/map height constants to fit the screen correctly
         TextOverlaySeekBar mapWidthConfig = (TextOverlaySeekBar) findViewById(R.id.config_mapwidth);
@@ -335,30 +340,6 @@ public class MainActivity extends AppCompatActivity {
         //Initialize the "BluetoothMonitor" object and start it
         btMonitor = new StandardBluetoothMonitor();
         btMonitor.start();
-//
-//        //Send toast messages with rssi strengths:
-//        Context context = getApplicationContext();
-//        String text;
-//        int duration = Toast.LENGTH_LONG, i=0;
-//        Queue<Integer> rssiQueue=beaconHolder.getRssiQueue();
-//        ArrayList<Integer> rssiList=new ArrayList();
-//        while(rssiQueue.peek()!=null)
-//        {
-//            rssiList.add(i,rssiQueue.remove());
-//            i++;
-//        }
-//
-//        text="";
-//        long time=0;
-//
-//        for(int j=0; j<rssiList.size(); j++)S
-//        {
-//            time= System.currentTimeMillis();
-//            text+="RSSI Strengths: "+rssiList.get(j)+time+"\n";
-//        }
-//
-//        Toast toast = Toast.makeText(context, text, duration);
-//        toast.show();
 
         //Get a reference to the ImageView called newBeaconMarker from the main app view
         newBeaconMarker = (ImageView) findViewById(R.id.newBeaconMarker);

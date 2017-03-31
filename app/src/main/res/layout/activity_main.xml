@@ -37,15 +37,6 @@
         android:onClick="getRoute"
         android:text="@string/route" />
 
-    <TextView
-        android:id="@+id/direction"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentStart="true"
-        android:layout_below="@+id/getroute"
-        android:layout_marginTop="33dp"
-        android:text="" />
-
     <LinearLayout
         android:id="@+id/linearLayout"
         android:layout_width="fill_parent"
@@ -86,6 +77,8 @@
         android:layout_height="match_parent"
         android:layout_alignParentStart="true"
         android:layout_below="@+id/getroute">
+
+
 
 
         <lilium.beaconnavigation.Views.DrawableImageView
@@ -133,7 +126,7 @@
                 android:layout_height="wrap_content"
                 android:background="@color/colorPrimaryDark"
                 app:seekbarMin="100"
-                app:seekbarMax="200"
+                app:seekbarMax="300"
                 app:progressWildCard="%p"
                 app:template="Map Width Constant: %p" />
 
@@ -143,7 +136,7 @@
                 android:layout_height="wrap_content"
                 android:background="@color/colorPrimaryDark"
                 app:seekbarMin="100"
-                app:seekbarMax="200"
+                app:seekbarMax="300"
                 app:progressWildCard="%p"
                 app:template="Map Height Constant: %p" />
 
@@ -211,5 +204,12 @@
                 app:progressWildCard="%p"
                 app:template="Max Position Update Delay (ms): %p" />
         </LinearLayout>
+        <lilium.beaconnavigation.Views.RssiMonitorView
+            android:layout_width="match_parent"
+            android:textAlignment="viewStart"
+            android:textSize="@dimen/text_size"
+            android:layout_height="wrap_content"
+            android:id="@+id/rssiAdvMonitorLabel"
+            android:visibility="visible" />
     </FrameLayout>
 </RelativeLayout>

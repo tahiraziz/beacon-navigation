@@ -176,7 +176,7 @@ public class DBManager {
     }
 
     public void wipeBeacons(){
-        db.execSQL("DELETE * FROM beacons;");
+        db.execSQL("DELETE FROM beacons");
     }
 
     public void addBeacon(String mac, float x, float y){

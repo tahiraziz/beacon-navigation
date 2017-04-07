@@ -53,6 +53,7 @@ import lilium.beaconnavigation.Interfaces.BeaconKeeper;
 import lilium.beaconnavigation.Interfaces.BluetoothMonitor;
 import lilium.beaconnavigation.Interfaces.ImageProcessingService;
 import lilium.beaconnavigation.Interfaces.Configurator;
+import lilium.beaconnavigation.Interfaces.Logger;
 import lilium.beaconnavigation.Interfaces.PositionUpdater;
 import lilium.beaconnavigation.Services.BasicImageProcessingService;
 import lilium.beaconnavigation.Services.DBManager;
@@ -85,6 +86,7 @@ public class MainActivity extends AppCompatActivity {
     public static PositionUpdater positionUpdater;
     public static ArrayAdapter<Beacon> beaconArrayAdapter;
     public static DBManager dbManager;
+    public static Logger logger;
 
 
     //Library
@@ -122,6 +124,10 @@ public class MainActivity extends AppCompatActivity {
 
         //Initialize our bluetooth services in the application so we can read BLE advertisements
         initializeBluetooth();
+
+
+        //logger.openFileStream(); //What exactly goes in here?
+        //logger.checkFileDirectory(context); //Figure out to add contexts
     }
 
     //This method is checks if we are using Android 6.0 or less
@@ -480,4 +486,13 @@ public class MainActivity extends AppCompatActivity {
         map.setPath(path);
         map.invalidate();
     }
+
+    @Override
+    protected void onDestroy()
+    {
+        logger.cleanUp();
+        super.onDestroy();
+    }
+
+
 }

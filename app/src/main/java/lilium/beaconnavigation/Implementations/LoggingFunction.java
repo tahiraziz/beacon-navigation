@@ -16,28 +16,31 @@ import lilium.beaconnavigation.Implementations.StandardBluetoothMonitor;
  */
 
 public class LoggingFunction implements Logger {
-
-    FileOutputStream write;
-    File gpxfile;
     FileWriter writer;
 
-    public void openFileStream(Context context)
+    public LoggingFunction(String logFileName)
     {
         try {
-            write = context.getApplicationContext().openFileOutput("Log", Context.MODE_PRIVATE);
-        }
-        catch(IOException e)
-        {
+            File root = new File(Environment.getDataDirectory(), logFileName);
+            if (!root.exists()) {
+                root.mkdirs();
+            }
+            File logFile = new File(root, logFileName);
+            writer = new FileWriter(logFile);
+
+        }catch(IOException e) {
             e.printStackTrace();
         }
     }
 
-    public void logPosition(Integer rssi, float x, float y)
+    public void log(String logString)
     {
         try
         {
-            //This is where the actual values will be written into the text file
-            write.write(8);
+            if(writer != null) {
+                //This is where the actual values will be written into the text file
+                writer.append(logString + "\n");
+            }
         }
         catch(IOException e)
         {
@@ -48,8 +51,6 @@ public class LoggingFunction implements Logger {
     public void cleanUp()
     {
         try {
-            write.flush();
-            write.close();
             writer.flush();
             writer.close();
         }
@@ -58,21 +59,4 @@ public class LoggingFunction implements Logger {
             e.printStackTrace();
         }
     }
-
-    public void checkFileDirectory(String sFileName,String sBody) {
-
-        try {
-            File root = new File(Environment.getDataDirectory(), "Log");
-            if (!root.exists()) {
-                root.mkdirs();
-            }
-            File gpxfile = new File(root, sFileName);
-            writer = new FileWriter(gpxfile);
-
-        }catch(IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-
 }

@@ -9,15 +9,6 @@ import android.content.Context;
 
 
 public interface Logger {
-
-    void openFileStream(Context context);
-    void checkFileDirectory(String sFileName,String sBody);
-    void logPosition(Integer rssi, float x, float y);
+    void log(String logString);
     void cleanUp();
-
-
-
-
-
-
 }

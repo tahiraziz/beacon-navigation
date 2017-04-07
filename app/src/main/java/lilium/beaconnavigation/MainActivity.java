@@ -36,6 +36,7 @@ import org.apache.commons.math3.geometry.euclidean.threed.Line;
 import org.w3c.dom.Text;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Queue;
 
@@ -44,6 +45,7 @@ import lilium.beaconnavigation.Classes.Location;
 import lilium.beaconnavigation.Classes.MapGraph;
 import lilium.beaconnavigation.Classes.Room;
 import lilium.beaconnavigation.Enums.ActivityRequestCodeEnum;
+import lilium.beaconnavigation.Implementations.LoggingFunction;
 import lilium.beaconnavigation.Implementations.MultiThreadedBeaconKeeper;
 import lilium.beaconnavigation.Implementations.MultiThreadedPositionUpdater;
 import lilium.beaconnavigation.Implementations.RssiAveragingBeacon;
@@ -92,7 +94,7 @@ public class MainActivity extends AppCompatActivity {
     //Library
     public static DrawableImageView map;
 
-    public static PointF position = new PointF(0, 0);
+    public static PointF position = new PointF(0, 0); // has an X and a Y float on it to represent current position for DrawableImageView
     public static ArrayList<String> availableDbFilePaths;
     public static TextView rssiMonitorLabel;
     public static boolean loaded = false;
@@ -124,10 +126,7 @@ public class MainActivity extends AppCompatActivity {
 
         //Initialize our bluetooth services in the application so we can read BLE advertisements
         initializeBluetooth();
-
-
-        //logger.openFileStream(); //What exactly goes in here?
-        //logger.checkFileDirectory(context); //Figure out to add contexts
+        logger = new LoggingFunction("log_" + new Date().toString() +".csv");
     }
 
     //This method is checks if we are using Android 6.0 or less
@@ -207,8 +206,10 @@ public class MainActivity extends AppCompatActivity {
 
     //This setup method runs after the Bluetooth has been enabled. It gives us handlers for all the buttons on the view
     void setup() {
+
         //dataHandler is used to do SQLLite database transactions (reading and writing data)
         dbManager = DBManager.getDBManager(this);
+
 
         //Get a reference to the SubSamplingScaleImageView in our view so we can do things with it
         map = (DrawableImageView) findViewById(R.id.map);

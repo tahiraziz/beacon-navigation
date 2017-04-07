@@ -47,7 +47,9 @@ public class StandardBluetoothMonitor implements BluetoothMonitor {
                     thisScansRssi = result.getRssi();
                     if (is_Beacon(result.getScanRecord().getBytes()) && thisScansRssi > AppConfig.get_bt_mon_filter_min()) {
                         //Do an idempotent update of beacons in beacon keeper (whether "placed" or "unplaced" within the beacon keeper)
-                        MainActivity.beaconKeeper.async_updateBeacon(result.getDevice().getAddress().replace(":", ""), thisScansRssi);
+                        String beaconId = result.getDevice().getAddress().replace(":", "");
+                        MainActivity.beaconKeeper.async_updateBeacon(beaconId, thisScansRssi);
+                        MainActivity.logger.log(thisScansRssi + "," + MainActivity.position.x + "," + MainActivity.position.y + "," + beaconId + ',' + Build.VERSION.SDK_INT );
                     }
                 }
             };
@@ -61,7 +63,9 @@ public class StandardBluetoothMonitor implements BluetoothMonitor {
                     //filter outlier beacons
                     if (is_Beacon(scanRecord) && rssi > AppConfig.get_bt_mon_filter_min()) {
                         //update beacons
-                        MainActivity.beaconKeeper.async_updateBeacon(device.getAddress().replace(":", ""), rssi);
+                        String beaconId = device.getAddress().replace(":", "");
+                        MainActivity.beaconKeeper.async_updateBeacon(beaconId, rssi);
+                        MainActivity.logger.log(thisScansRssi + "," + MainActivity.position.x + "," + MainActivity.position.y + "," + beaconId + ',' + Build.VERSION.SDK_INT);
                     }
                 }
             };
@@ -99,6 +103,4 @@ public class StandardBluetoothMonitor implements BluetoothMonitor {
             return thisScansRssi;
         }
     }
-
-
 }

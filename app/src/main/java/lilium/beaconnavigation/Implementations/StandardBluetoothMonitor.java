@@ -11,6 +11,7 @@ import android.content.Context;
 import android.os.Build;
 import android.os.Environment;
 
+import java.util.Calendar;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.OutputStream;
@@ -18,6 +19,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 
 import lilium.beaconnavigation.AppConfig;
 import lilium.beaconnavigation.Interfaces.BluetoothMonitor;
@@ -29,6 +31,7 @@ public class StandardBluetoothMonitor implements BluetoothMonitor {
     private BluetoothAdapter.LeScanCallback deprecated_scanCallback;
     private ScanSettings settings;
     private ArrayList<ScanFilter> filters;
+    private java.util.Calendar cal = Calendar.getInstance();
     private byte beacon_filter[];
     int thisScansRssi;
 
@@ -49,7 +52,7 @@ public class StandardBluetoothMonitor implements BluetoothMonitor {
                         //Do an idempotent update of beacons in beacon keeper (whether "placed" or "unplaced" within the beacon keeper)
                         String beaconId = result.getDevice().getAddress().replace(":", "");
                         MainActivity.beaconKeeper.async_updateBeacon(beaconId, thisScansRssi);
-                        MainActivity.logger.log(thisScansRssi + "," + MainActivity.position.x + "," + MainActivity.position.y + "," + beaconId + ',' + Build.VERSION.SDK_INT );
+//                        MainActivity.logger.log(new Date().getTime() + "," + thisScansRssi + "," + MainActivity.position.x + "," + MainActivity.position.y + "," + beaconId + ',' + Build.VERSION.SDK_INT );
                     }
                 }
             };
@@ -65,7 +68,7 @@ public class StandardBluetoothMonitor implements BluetoothMonitor {
                         //update beacons
                         String beaconId = device.getAddress().replace(":", "");
                         MainActivity.beaconKeeper.async_updateBeacon(beaconId, rssi);
-                        MainActivity.logger.log(thisScansRssi + "," + MainActivity.position.x + "," + MainActivity.position.y + "," + beaconId + ',' + Build.VERSION.SDK_INT);
+//                        MainActivity.logger.log(new Date().getTime() + "," + thisScansRssi + "," + MainActivity.position.x + "," + MainActivity.position.y + "," + beaconId + ',' + Build.VERSION.SDK_INT);
                     }
                 }
             };

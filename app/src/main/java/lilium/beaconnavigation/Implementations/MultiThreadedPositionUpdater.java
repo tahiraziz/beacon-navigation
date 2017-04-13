@@ -19,10 +19,10 @@ import lilium.beaconnavigation.Interfaces.TrilaterationFunction;
 import lilium.beaconnavigation.MainActivity;
 
 public class MultiThreadedPositionUpdater implements PositionUpdater {
-    private long lastUpdate;
-    private Thread positionUpdate;
-    private AtomicBoolean stop;
-    private AtomicInteger running;
+    protected long lastUpdate;
+    protected Thread positionUpdate;
+    protected AtomicBoolean stop;
+    protected AtomicInteger running;
 
     public MultiThreadedPositionUpdater() {
         lastUpdate = System.currentTimeMillis();
@@ -62,7 +62,7 @@ public class MultiThreadedPositionUpdater implements PositionUpdater {
         positionUpdate.start();
     }
 
-    private void updatePosition(ArrayList<Beacon> beacons) {
+    protected void updatePosition(ArrayList<Beacon> beacons) {
         double[][] positions = new double[beacons.size()][2];
         double[] distances = new double[beacons.size()];
         if (beacons.size() > 1) {
@@ -93,7 +93,7 @@ public class MultiThreadedPositionUpdater implements PositionUpdater {
         }
     }
 
-    private class PositionUpdate extends AsyncTask<Object,Void,Void> {
+    protected class PositionUpdate extends AsyncTask<Object,Void,Void> {
 
         protected Void doInBackground(Object ... args) {
             ArrayList<Beacon> beacons;

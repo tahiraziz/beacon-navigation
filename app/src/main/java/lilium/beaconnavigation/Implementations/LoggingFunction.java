@@ -27,7 +27,6 @@ public class LoggingFunction implements Logger {
             }
             File logFile = new File(root, logFileName);
             writer = new FileWriter(logFile);
-
         }catch(IOException e) {
             e.printStackTrace();
         }

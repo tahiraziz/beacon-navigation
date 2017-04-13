@@ -12,11 +12,7 @@ public interface Beacon {
     float getX();
     float getY();
     long getLastUpdate();
-    int getRssi();
     Queue<Integer> getRssiQueue();
-    void setMac(String mac);
-    void setX(float x);
-    void setY(float y);
     void setLastUpdate(long lastUpdate);
     void setRssi(int rssi);
 

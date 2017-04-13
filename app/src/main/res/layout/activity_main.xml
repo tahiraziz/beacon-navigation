@@ -158,7 +158,7 @@
                 android:layout_height="wrap_content"
                 android:background="@color/colorPrimaryDark"
                 app:seekbarMin="1"
-                app:seekbarMax="2000"
+                app:seekbarMax="20"
                 app:progressWildCard="%p"
                 app:template="Bluetooth Adv. Queue Max Length: %p" />
 

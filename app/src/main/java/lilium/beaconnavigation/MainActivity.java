@@ -302,6 +302,7 @@ public class MainActivity extends AppCompatActivity {
         //Set image and wall pixel postions int he DrawableImageView (custom setImage method)
         map.setImage(ImageSource.bitmap(imageData.FilteredBitmap));
 
+
         //build DB
         mapGraph = new MapGraph(dbManager);
         mapGraph.buildGraph();

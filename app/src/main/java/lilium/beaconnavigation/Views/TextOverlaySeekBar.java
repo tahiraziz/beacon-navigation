@@ -12,7 +12,7 @@ import android.widget.SeekBar;
 import lilium.beaconnavigation.Interfaces.Configurator;
 import lilium.beaconnavigation.R;
 
-public class TextOverlaySeekBar extends SeekBar {
+public class TextOverlaySeekBar extends android.support.v7.widget.AppCompatSeekBar {
     private final String _template;
     private final String _progressWildCard;
     private Configurator _configurator = null;

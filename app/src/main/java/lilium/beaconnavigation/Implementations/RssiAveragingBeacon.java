@@ -58,25 +58,10 @@ public class RssiAveragingBeacon implements Beacon {
         return lastUpdate;
     }
 
-    @Override
-    public int getRssi() {
-        return rssi;
-    }
-
-    @Override
-    public void setMac(String mac) {
-        this.mac = mac;
-    }
-
-    @Override
-    public void setX(float x) {
-        this.x = x;
-    }
-
-    @Override
-    public void setY(float y) {
-        this.y = y;
-    }
+//    @Override
+//    public int getRssi() {
+//        return rssi;
+//    }
 
     @Override
     public void setLastUpdate(long lastUpdate) {
@@ -98,7 +83,7 @@ public class RssiAveragingBeacon implements Beacon {
         //ratio_db = -61 - (beacons.get(i).cummulativeRssi / beacons.get(i).numRssi)
         //Convert to linear Math.pow(10.0, (ratio_db) / 10.0))
         //2 / x inverse because the results were backwards.
-        return 10 / Math.pow(10.0, (-61 - Math.min(-55, smoothRssi())) / 10.0);
+        return 10d / Math.pow(10.0d, (-61d - Math.min(-55d, smoothRssi())) / 10.0d);
     }
 
     public synchronized void addRssi(Integer Rssi){
@@ -116,6 +101,7 @@ public class RssiAveragingBeacon implements Beacon {
         for(Integer i: rssiQueue){
             sum += i;
         }
-        return sum / rssiQueue.size();
+
+        return (double)sum / (double)rssiQueue.size();
     }
 }

@@ -18,7 +18,7 @@ public class AppConfig {
 
     public static double get_trilateration_epsilon() { return _sharedPrefs.getFloat("TRILAT_EPSILON",(float)1E-7);}
 
-    public static int get_bt_mon_filter_min() { return _sharedPrefs.getInt("BT_MON_FILTER_MIN",-84);}
+    public static int get_bt_mon_filter_min() { return _sharedPrefs.getInt("BT_MON_FILTER_MIN",-120);}
 
     public static int get_beacon_advert_queue_max_length() { return _sharedPrefs.getInt("ADVERT_QUEUE_MAX_LENGTH", 15);}
 

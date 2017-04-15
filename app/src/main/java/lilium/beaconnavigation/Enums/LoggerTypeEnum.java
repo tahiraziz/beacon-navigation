@@ -8,7 +8,7 @@ import java.util.TreeMap;
  */
 
 public enum LoggerTypeEnum {
-    RssiReceived, PositionUpdater, StandardTrilaterationFunction, NonLinearLeastSquaresSolver;
+    RssiReceived, PositionUpdater, StandardTrilaterationFunction, NonLinearLeastSquaresSolver, WalkToggle;
 
     private static Map<Integer, LoggerTypeEnum> ss = new TreeMap<Integer,LoggerTypeEnum>();
     private static final int START_VALUE = 1;

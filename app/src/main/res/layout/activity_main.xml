@@ -50,25 +50,39 @@
             android:id="@+id/AddBeaconButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:backgroundTint="@android:color/background_light"
             app:srcCompat="@android:drawable/ic_menu_add" />
 
         <ImageButton
             android:id="@+id/RemoveBeaconButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:backgroundTint="@android:color/background_light"
             app:srcCompat="@android:drawable/ic_menu_delete" />
 
         <ImageButton
             android:id="@+id/WipeBeaconsButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:backgroundTint="@android:color/background_light"
             app:srcCompat="@android:drawable/ic_menu_rotate" />
 
         <ImageButton
             android:id="@+id/AppConfigButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:backgroundTint="@android:color/background_light"
             app:srcCompat="@android:drawable/ic_menu_agenda" />
+
+        <ImageButton
+            android:id="@+id/ToggleWalk"
+            android:layout_width="62dp"
+            android:layout_height="match_parent"
+            android:backgroundTint="@android:color/background_light"
+            android:scaleType="fitXY"
+            android:text="Start\nWalking"
+            android:textSize="@dimen/walk_btn_text_size"
+            app:srcCompat="@drawable/walk_img" />
     </LinearLayout>
 
     <FrameLayout

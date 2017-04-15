@@ -9,6 +9,7 @@ import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Color;
 import android.graphics.PointF;
 import android.net.Uri;
 import android.os.Build;
@@ -46,6 +47,7 @@ import lilium.beaconnavigation.Classes.Location;
 import lilium.beaconnavigation.Classes.MapGraph;
 import lilium.beaconnavigation.Classes.Room;
 import lilium.beaconnavigation.Enums.ActivityRequestCodeEnum;
+import lilium.beaconnavigation.Enums.LoggerTypeEnum;
 import lilium.beaconnavigation.Implementations.LoggingFunction;
 import lilium.beaconnavigation.Implementations.MultiThreadedBeaconKeeper;
 import lilium.beaconnavigation.Implementations.MultiThreadedPositionUpdater;
@@ -97,6 +99,9 @@ public class MainActivity extends AppCompatActivity {
     public static PointF position = new PointF(0, 0); // has an X and a Y float on it to represent current position for DrawableImageView
     public static ArrayList<String> availableDbFilePaths;
     public static TextView rssiMonitorLabel;
+    public static ImageButton toggleWalkButton;
+
+    public static boolean walking = false;
     public static boolean loaded = false;
 
     public static Beacon beaconToMonitor;
@@ -221,6 +226,9 @@ public class MainActivity extends AppCompatActivity {
         rooms = (Spinner) findViewById(R.id.rooms);
 
         rssiMonitorLabel = (TextView)findViewById(R.id.rssiAdvMonitorLabel);
+
+
+
 
         //Text box and two sliders to tweak the map width/map height constants to fit the screen correctly
         TextOverlaySeekBar mapWidthConfig = (TextOverlaySeekBar) findViewById(R.id.config_mapwidth);
@@ -463,6 +471,27 @@ public class MainActivity extends AppCompatActivity {
                 map.invalidate();
             }
         });
+
+
+        toggleWalkButton = (ImageButton)findViewById(R.id.ToggleWalk);
+
+        //Set the on click for the wipe beacons button
+        imageButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                MainActivity.walking = !MainActivity.walking;
+                if(MainActivity.walking)
+                {
+                    MainActivity.toggleWalkButton.setBackgroundColor(Color.GRAY);
+                }
+                else{
+                    MainActivity.toggleWalkButton.setBackgroundColor(Color.WHITE);
+                }
+                String walkingString  =MainActivity.walking ? "started walking" : "stopped walking";
+                MainActivity.logger.log(LoggerTypeEnum.WalkToggle + "," + walkingString + "," + System.currentTimeMillis());
+            }
+        });
+
 
         //Instantiate the position updater
         positionUpdater = new MultiThreadedPositionUpdater();

@@ -52,7 +52,6 @@ public class StandardBluetoothMonitor implements BluetoothMonitor {
                         //Do an idempotent update of beacons in beacon keeper (whether "placed" or "unplaced" within the beacon keeper)
                         String beaconId = result.getDevice().getAddress().replace(":", "");
                         MainActivity.beaconKeeper.async_updateBeacon(beaconId, thisScansRssi);
-//                        MainActivity.logger.log(new Date().getTime() + "," + thisScansRssi + "," + MainActivity.position.x + "," + MainActivity.position.y + "," + beaconId + ',' + Build.VERSION.SDK_INT );
                     }
                 }
             };
@@ -68,7 +67,6 @@ public class StandardBluetoothMonitor implements BluetoothMonitor {
                         //update beacons
                         String beaconId = device.getAddress().replace(":", "");
                         MainActivity.beaconKeeper.async_updateBeacon(beaconId, rssi);
-//                        MainActivity.logger.log(new Date().getTime() + "," + thisScansRssi + "," + MainActivity.position.x + "," + MainActivity.position.y + "," + beaconId + ',' + Build.VERSION.SDK_INT);
                     }
                 }
             };

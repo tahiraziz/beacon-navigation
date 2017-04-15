@@ -7,7 +7,9 @@ import org.apache.commons.math3.linear.RealVector;
 import org.apache.commons.math3.util.Pair;
 
 import lilium.beaconnavigation.AppConfig;
+import lilium.beaconnavigation.Enums.LoggerTypeEnum;
 import lilium.beaconnavigation.Interfaces.TrilaterationFunction;
+import lilium.beaconnavigation.MainActivity;
 
 /**
  * Models the Trilateration problem. This is a formulation for a nonlinear least
@@ -31,6 +33,7 @@ public class StandardTrilaterationFunction implements TrilaterationFunction {
     protected final double distances[];
 
     public StandardTrilaterationFunction(double positions[][], double distances[]) {
+        MainActivity.logger.log(LoggerTypeEnum.StandardTrilaterationFunction + "," + System.currentTimeMillis() + ",started constructor()");
 
         if(positions.length < 2) {
             throw new IllegalArgumentException("Need at least two positions.");
@@ -54,6 +57,7 @@ public class StandardTrilaterationFunction implements TrilaterationFunction {
 
         this.positions = positions;
         this.distances = distances;
+        MainActivity.logger.log(LoggerTypeEnum.StandardTrilaterationFunction + "," + System.currentTimeMillis() + ",finished constructor()");
     }
 
     public final double[] getDistances() {
@@ -75,6 +79,7 @@ public class StandardTrilaterationFunction implements TrilaterationFunction {
      * @return Jacobian matrix for point
      */
     public RealMatrix jacobian(RealVector point) {
+        MainActivity.logger.log(LoggerTypeEnum.StandardTrilaterationFunction + "," + System.currentTimeMillis() + ",started jacobian()");
         double[] pointArray = point.toArray();
 
         double[][] jacobian = new double[distances.length][pointArray.length];
@@ -84,12 +89,13 @@ public class StandardTrilaterationFunction implements TrilaterationFunction {
             }
         }
 
+        MainActivity.logger.log(LoggerTypeEnum.StandardTrilaterationFunction + "," + System.currentTimeMillis() + ",finished jacobian()");
         return new Array2DRowRealMatrix(jacobian);
     }
 
     @Override
     public Pair<RealVector, RealMatrix> value(RealVector point) {
-
+        MainActivity.logger.log(LoggerTypeEnum.StandardTrilaterationFunction + "," + System.currentTimeMillis() + ",started value()");
         // input
         double[] pointArray = point.toArray();
 
@@ -107,6 +113,7 @@ public class StandardTrilaterationFunction implements TrilaterationFunction {
         }
 
         RealMatrix jacobian = jacobian(point);
+        MainActivity.logger.log(LoggerTypeEnum.StandardTrilaterationFunction + "," + System.currentTimeMillis() + ",finished value()");
         return new Pair<RealVector, RealMatrix>(new ArrayRealVector(resultPoint), jacobian);
     }
 }

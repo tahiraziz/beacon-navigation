@@ -9,8 +9,10 @@ import org.apache.commons.math3.linear.DiagonalMatrix;
 import org.apache.commons.math3.linear.RealVector;
 
 import lilium.beaconnavigation.AppConfig;
+import lilium.beaconnavigation.Enums.LoggerTypeEnum;
 import lilium.beaconnavigation.Interfaces.LeastSquaresSolver;
 import lilium.beaconnavigation.Interfaces.TrilaterationFunction;
+import lilium.beaconnavigation.MainActivity;
 
 /**
  * Solves a Trilateration problem with an instance of a
@@ -86,6 +88,9 @@ public class NonLinearLeastSquaresSolver implements LeastSquaresSolver {
     }
 
     public RealVector solve() {
-        return solve(false).getPoint();
+        MainActivity.logger.log(LoggerTypeEnum.NonLinearLeastSquaresSolver + "," + System.currentTimeMillis() + ",started solve()");
+        RealVector result =  solve(false).getPoint();
+        MainActivity.logger.log(LoggerTypeEnum.NonLinearLeastSquaresSolver + "," + System.currentTimeMillis() + ",finished solve()");
+        return result;
     }
 }

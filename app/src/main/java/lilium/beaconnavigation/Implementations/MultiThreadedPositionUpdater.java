@@ -2,16 +2,19 @@ package lilium.beaconnavigation.Implementations;
 
 import android.graphics.PointF;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.util.Log;
 import org.apache.commons.math3.exception.TooManyEvaluationsException;
 import org.apache.commons.math3.fitting.leastsquares.LevenbergMarquardtOptimizer;
 import org.apache.commons.math3.linear.RealVector;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import lilium.beaconnavigation.AppConfig;
+import lilium.beaconnavigation.Enums.LoggerTypeEnum;
 import lilium.beaconnavigation.Interfaces.Beacon;
 import lilium.beaconnavigation.Interfaces.LeastSquaresSolver;
 import lilium.beaconnavigation.Interfaces.PositionUpdater;
@@ -63,6 +66,7 @@ public class MultiThreadedPositionUpdater implements PositionUpdater {
     }
 
     protected void updatePosition(ArrayList<Beacon> beacons) {
+        MainActivity.logger.log(LoggerTypeEnum.PositionUpdater + "," + System.currentTimeMillis() + ",started updatePositionArray()," + MainActivity.position.x + "," + MainActivity.position.y + "," + Build.VERSION.SDK_INT );
         double[][] positions = new double[beacons.size()][2];
         double[] distances = new double[beacons.size()];
         if (beacons.size() > 1) {
@@ -75,11 +79,16 @@ public class MultiThreadedPositionUpdater implements PositionUpdater {
                 distances[i] = beacons.get(i).distance();
             }
             try {
+                MainActivity.logger.log(LoggerTypeEnum.PositionUpdater + "," + System.currentTimeMillis() + ",starting trilateration function," + Build.VERSION.SDK_INT );
                 TrilaterationFunction triFunc = new StandardTrilaterationFunction(positions,distances);
+                MainActivity.logger.log(LoggerTypeEnum.PositionUpdater + "," + System.currentTimeMillis() + ",finished trilateration function," + Build.VERSION.SDK_INT );
+                MainActivity.logger.log(LoggerTypeEnum.PositionUpdater + "," + System.currentTimeMillis() + ",starting linear least squares solver function," + Build.VERSION.SDK_INT );
                 LeastSquaresSolver solver = new NonLinearLeastSquaresSolver(triFunc, new LevenbergMarquardtOptimizer());
+                MainActivity.logger.log(LoggerTypeEnum.PositionUpdater + "," + System.currentTimeMillis() + ",finished linear least squares solver function," + Build.VERSION.SDK_INT );
                 RealVector vec = solver.solve();
                 double[] calculatedPosition = vec.toArray();
                 MainActivity.position = new PointF((float) calculatedPosition[0], (float) calculatedPosition[1]);
+                MainActivity.logger.log(LoggerTypeEnum.PositionUpdater + "," + System.currentTimeMillis() + ",finished updatePositionArray()," + MainActivity.position.x + "," + MainActivity.position.y + "," + Build.VERSION.SDK_INT );
                 lastUpdate = System.currentTimeMillis();
                 try{
                     Thread.sleep(AppConfig.get_minimium_position_delay());

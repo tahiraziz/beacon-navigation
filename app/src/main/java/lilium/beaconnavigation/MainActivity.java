@@ -35,6 +35,7 @@ import com.davemorrissey.labs.subscaleview.ImageSource;
 import org.apache.commons.math3.geometry.euclidean.threed.Line;
 import org.w3c.dom.Text;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -90,7 +91,6 @@ public class MainActivity extends AppCompatActivity {
     public static DBManager dbManager;
     public static Logger logger;
 
-
     //Library
     public static DrawableImageView map;
 
@@ -126,7 +126,10 @@ public class MainActivity extends AppCompatActivity {
 
         //Initialize our bluetooth services in the application so we can read BLE advertisements
         initializeBluetooth();
-        logger = new LoggingFunction("log_" + new Date().toString() +".csv");
+
+        String dateStr = new SimpleDateFormat("MM-dd-yyyy hh mm ss").format(new Date());
+
+        logger = new LoggingFunction("log_" + dateStr +".txt");
     }
 
     //This method is checks if we are using Android 6.0 or less

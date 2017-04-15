@@ -21,12 +21,18 @@ public class LoggingFunction implements Logger {
     public LoggingFunction(String logFileName)
     {
         try {
-            File root = new File(Environment.getDataDirectory(), logFileName);
-            if (!root.exists()) {
+
+            File root=Environment.getExternalStorageDirectory();
+
+            File testFile = new File(root, logFileName);
+            if(!testFile.exists())
+            {
                 root.mkdirs();
+                root.createNewFile();
             }
-            File logFile = new File(root, logFileName);
-            writer = new FileWriter(logFile);
+
+
+            writer = new FileWriter(testFile);
         }catch(IOException e) {
             e.printStackTrace();
         }
@@ -39,6 +45,7 @@ public class LoggingFunction implements Logger {
             if(writer != null) {
                 //This is where the actual values will be written into the text file
                 writer.append(logString + "\n");
+                writer.flush();
             }
         }
         catch(IOException e)
@@ -50,7 +57,6 @@ public class LoggingFunction implements Logger {
     public void cleanUp()
     {
         try {
-            writer.flush();
             writer.close();
         }
         catch(IOException e)

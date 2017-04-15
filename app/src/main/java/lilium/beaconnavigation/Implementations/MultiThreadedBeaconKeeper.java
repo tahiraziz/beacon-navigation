@@ -1,12 +1,15 @@
 package lilium.beaconnavigation.Implementations;
 
 import android.os.AsyncTask;
+import android.os.Build;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import lilium.beaconnavigation.AppConfig;
+import lilium.beaconnavigation.Enums.LoggerTypeEnum;
 import lilium.beaconnavigation.Interfaces.Beacon;
 import lilium.beaconnavigation.Interfaces.BeaconKeeper;
 import lilium.beaconnavigation.MainActivity;
@@ -153,6 +156,9 @@ public class MultiThreadedBeaconKeeper extends AppCompatActivity implements Beac
                 beacon.setRssi(rssi);
                 beacon.setLastUpdate(System.currentTimeMillis());
                 beacon.addRssi(rssi);
+
+                MainActivity.logger.log(LoggerTypeEnum.RssiReceived + "," + System.currentTimeMillis() + "," + rssi + "," + MainActivity.position.x + "," + MainActivity.position.y + "," + beacon.getMac() + ',' + Build.VERSION.SDK_INT );
+
                 synchronized (placedBeacons) {
                     if (placedBeacons.contains(beacon)){
                         b = placedBeacons.indexOf(beacon);

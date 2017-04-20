@@ -119,48 +119,31 @@ public class MainActivity extends AppCompatActivity {
         //Setup application configuration wrapper (appConfig can be statically accessed from anywhere in the app)
         AppConfig.SetupConfig(getPreferences(0));
 
+        String dateStr = new SimpleDateFormat("MM-dd-yyyy hh mm ss").format(new Date());
+        logger = new LoggingFunction("log_" + dateStr +".txt");
+
         //Set the app's view to activity_main
         setContentView(R.layout.activity_main);
 
-        //Make sure we have the permissions we need to run this app, if we don't exit the app.
-        if (!initializePermissions()) {
-            System.runFinalization();
-            System.exit(0);
-        }
-        ;
-
-        //Initialize our bluetooth services in the application so we can read BLE advertisements
-        initializeBluetooth();
-
-        String dateStr = new SimpleDateFormat("MM-dd-yyyy hh mm ss").format(new Date());
-
-        logger = new LoggingFunction("log_" + dateStr +".txt");
+        initializePermissions();
     }
 
     //This method is checks if we are using Android 6.0 or less
     //If we are, then it runs the native permission requesting functions for accessing location, reading external storage, and writing external storage
     //that the app needs in order to run
-    boolean initializePermissions() {
+    void initializePermissions() {
         //Are we running less than Android 6.0? If so permissions are good so return true
-        if (Build.VERSION.SDK_INT < 23) {
-            return true;
+        if (Build.VERSION.SDK_INT >= 23) {
+            if (checkPermissions()) {
+                initializeBluetooth();
+            } else {
+                requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1);
+            }
+        }
+        else{
+            initializeBluetooth();
         }
 
-        //Check permissions (perhaps they are already good?) If they're good return true
-        if (checkPermissions()) {
-            return true;
-        }
-
-        //Run the native android functionality for getting permissions for this app since permissions are not good
-        requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1);
-
-        //If they are good now return true
-        if (checkPermissions()) {
-            return true;
-        }
-
-        //We have done everything we can, permissions are not accepted so return false
-        return false;
     }
 
     //Checks for the permissions that we need in this app
@@ -178,38 +161,42 @@ public class MainActivity extends AppCompatActivity {
     }
 
     void initializeBluetooth() {
-        //First we need our Bluetooth Manager
-        btManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
-
-        //Then we need our Bluetooth Adapter
-        btAdapter = btManager.getAdapter();
-
-
-        if (btAdapter != null && !btAdapter.isEnabled()) {
-            //Once we get our adapter, we need to enable the adapter
-            Intent enableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-            startActivityForResult(enableIntent, 1);
-        } else {
-            //If initializeBluetooth was called from "onActivityResult" (the result of enabling it)
-            //then it will be enabled and we will get here.
-            setup();
-        }
+        Intent enableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+        startActivityForResult(enableIntent, 1);
     }
 
     //Android 6.0 requires runtime user permission (api level 23 required...)
     @Override
     public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
-        checkPermissions();
+        if(checkPermissions())
+        {
+            initializeBluetooth();
+        }
+        else{
+            System.runFinalization();
+            System.exit(0);
+        }
     }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         switch (ActivityRequestCodeEnum.fromInt(requestCode)) {
             case BlueToothActivity:
-                initializeBluetooth();
+                //First we need our Bluetooth Manager
+                btManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
+
+                //Then we need our Bluetooth Adapter
+                btAdapter = btManager.getAdapter();
+
+                boolean en = btAdapter.isEnabled();
+                int state = btAdapter.getState();
+
+
+                logger.log("Bluetooth adapter enabled: " + en + ", state: " + state);
+
+                setup();
                 break;
         }
-
     }
 
     //This setup method runs after the Bluetooth has been enabled. It gives us handlers for all the buttons on the view
@@ -476,22 +463,24 @@ public class MainActivity extends AppCompatActivity {
         toggleWalkButton = (ImageButton)findViewById(R.id.ToggleWalk);
 
         //Set the on click for the wipe beacons button
-        imageButton.setOnClickListener(new View.OnClickListener() {
+        toggleWalkButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 MainActivity.walking = !MainActivity.walking;
                 if(MainActivity.walking)
                 {
-                    MainActivity.toggleWalkButton.setBackgroundColor(Color.GRAY);
+                    MainActivity.toggleWalkButton.setColorFilter(Color.argb(0,255,255,255));
+
                 }
                 else{
-                    MainActivity.toggleWalkButton.setBackgroundColor(Color.WHITE);
+                    MainActivity.toggleWalkButton.setColorFilter(Color.argb(200,255,255,255));
                 }
                 String walkingString  =MainActivity.walking ? "started walking" : "stopped walking";
                 MainActivity.logger.log(LoggerTypeEnum.WalkToggle + "," + walkingString + "," + System.currentTimeMillis());
             }
         });
 
+        MainActivity.toggleWalkButton.setColorFilter(Color.argb(200,255,255,255));
 
         //Instantiate the position updater
         positionUpdater = new MultiThreadedPositionUpdater();

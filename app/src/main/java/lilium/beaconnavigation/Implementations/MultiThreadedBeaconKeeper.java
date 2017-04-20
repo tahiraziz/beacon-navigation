@@ -157,7 +157,9 @@ public class MultiThreadedBeaconKeeper extends AppCompatActivity implements Beac
                 beacon.setLastUpdate(System.currentTimeMillis());
                 beacon.addRssi(rssi);
 
-                MainActivity.logger.log(LoggerTypeEnum.RssiReceived + "," + System.currentTimeMillis() + "," + rssi + "," + MainActivity.position.x + "," + MainActivity.position.y + "," + beacon.getMac() + ',' + Build.VERSION.SDK_INT );
+                if(MainActivity.walking) {
+                    MainActivity.logger.log(LoggerTypeEnum.RssiReceived + "," + System.currentTimeMillis() + "," + rssi + "," + MainActivity.position.x + "," + MainActivity.position.y + "," + beacon.getMac() + ',' + Build.VERSION.SDK_INT);
+                }
 
                 synchronized (placedBeacons) {
                     if (placedBeacons.contains(beacon)){

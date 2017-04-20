@@ -78,9 +78,8 @@
             android:id="@+id/ToggleWalk"
             android:layout_width="62dp"
             android:layout_height="match_parent"
-            android:backgroundTint="@android:color/background_light"
             android:scaleType="fitXY"
-            android:text="Start\nWalking"
+            android:backgroundTint="@android:color/background_light"
             android:textSize="@dimen/walk_btn_text_size"
             app:srcCompat="@drawable/walk_img" />
     </LinearLayout>

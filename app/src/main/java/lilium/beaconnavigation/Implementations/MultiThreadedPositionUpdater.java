@@ -66,10 +66,15 @@ public class MultiThreadedPositionUpdater implements PositionUpdater {
     }
 
     protected void updatePosition(ArrayList<Beacon> beacons) {
-        MainActivity.logger.log(LoggerTypeEnum.PositionUpdater + "," + System.currentTimeMillis() + ",started updatePositionArray()," + MainActivity.position.x + "," + MainActivity.position.y + "," + Build.VERSION.SDK_INT );
+
         double[][] positions = new double[beacons.size()][2];
         double[] distances = new double[beacons.size()];
         if (beacons.size() > 1) {
+            if(MainActivity.walking)
+            {
+                MainActivity.logger.log(LoggerTypeEnum.PositionUpdater + "," + System.currentTimeMillis() + ",started updatePositionArray()," + MainActivity.position.x + "," + MainActivity.position.y + "," + Build.VERSION.SDK_INT );
+            }
+
             for (int i = 0; i < beacons.size(); i++) {
                 positions[i][0] = beacons.get(i).getX();
                 positions[i][1] = beacons.get(i).getY();
@@ -79,16 +84,29 @@ public class MultiThreadedPositionUpdater implements PositionUpdater {
                 distances[i] = beacons.get(i).distance();
             }
             try {
-                MainActivity.logger.log(LoggerTypeEnum.PositionUpdater + "," + System.currentTimeMillis() + ",starting trilateration function," + Build.VERSION.SDK_INT );
+                if(MainActivity.walking) {
+                    MainActivity.logger.log(LoggerTypeEnum.PositionUpdater + "," + System.currentTimeMillis() + ",constructing trilateration function," + Build.VERSION.SDK_INT);
+                }
                 TrilaterationFunction triFunc = new StandardTrilaterationFunction(positions,distances);
-                MainActivity.logger.log(LoggerTypeEnum.PositionUpdater + "," + System.currentTimeMillis() + ",finished trilateration function," + Build.VERSION.SDK_INT );
-                MainActivity.logger.log(LoggerTypeEnum.PositionUpdater + "," + System.currentTimeMillis() + ",starting linear least squares solver function," + Build.VERSION.SDK_INT );
+                if(MainActivity.walking) {
+                    MainActivity.logger.log(LoggerTypeEnum.PositionUpdater + "," + System.currentTimeMillis() + ",finished constructing trilateration function," + Build.VERSION.SDK_INT);
+                }
+                if(MainActivity.walking) {
+                    MainActivity.logger.log(LoggerTypeEnum.PositionUpdater + "," + System.currentTimeMillis() + ",starting linear least squares solver function," + Build.VERSION.SDK_INT);
+                }
                 LeastSquaresSolver solver = new NonLinearLeastSquaresSolver(triFunc, new LevenbergMarquardtOptimizer());
-                MainActivity.logger.log(LoggerTypeEnum.PositionUpdater + "," + System.currentTimeMillis() + ",finished linear least squares solver function," + Build.VERSION.SDK_INT );
+
                 RealVector vec = solver.solve();
+
+                if(MainActivity.walking) {
+                    MainActivity.logger.log(LoggerTypeEnum.PositionUpdater + "," + System.currentTimeMillis() + ",finished linear least squares solver function," + Build.VERSION.SDK_INT);
+                }
+
                 double[] calculatedPosition = vec.toArray();
                 MainActivity.position = new PointF((float) calculatedPosition[0], (float) calculatedPosition[1]);
-                MainActivity.logger.log(LoggerTypeEnum.PositionUpdater + "," + System.currentTimeMillis() + ",finished updatePositionArray()," + MainActivity.position.x + "," + MainActivity.position.y + "," + Build.VERSION.SDK_INT );
+                if(MainActivity.walking) {
+                    MainActivity.logger.log(LoggerTypeEnum.PositionUpdater + "," + System.currentTimeMillis() + ",finished updatePositionArray()," + MainActivity.position.x + "," + MainActivity.position.y + "," + Build.VERSION.SDK_INT);
+                }
                 lastUpdate = System.currentTimeMillis();
                 try{
                     Thread.sleep(AppConfig.get_minimium_position_delay());
